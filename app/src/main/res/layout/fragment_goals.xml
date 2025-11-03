@@ -27,4 +27,25 @@
         android:layout_marginTop="16dp"
         android:text="Edit Goals" />
 
+    <Button
+        android:id="@+id/btnDemoReminder"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Demo Reminder (10s)"
+        android:layout_marginTop="16dp"/>
+
+    <Button
+        android:id="@+id/btnDailyReminder"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Daily Reminder (8:00 PM)"
+        android:layout_marginTop="8dp"/>
+
+    <Button
+        android:id="@+id/btnCancelReminder"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Cancel Reminders"
+        android:layout_marginTop="8dp"/>
+
 </LinearLayout>
