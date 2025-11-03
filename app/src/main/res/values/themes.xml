@@ -1,0 +1,5 @@
+<resources>
+    <style name="Theme.Nutrifit" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- your colors if you want -->
+    </style>
+</resources>
