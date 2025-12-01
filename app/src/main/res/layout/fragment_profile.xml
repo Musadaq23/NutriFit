@@ -27,4 +27,56 @@
         android:layout_marginTop="16dp"
         android:text="Help &amp; Support" />
 
+    <LinearLayout
+        android:id="@+id/reminderSettingsSection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingTop="32dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Daily Reminder Settings"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:paddingBottom="8dp"/>
+
+        <Switch
+            android:id="@+id/switchEnableReminder"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Enable daily reminder" />
+
+        <TextView
+            android:id="@+id/textReminderTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Reminder time: 20:00" />
+
+        <Button
+            android:id="@+id/buttonPickTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Change time" />
+
+        <Switch
+            android:id="@+id/switchMealReminder"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Meal reminder" />
+
+        <Switch
+            android:id="@+id/switchWorkoutReminder"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Workout reminder" />
+
+    </LinearLayout>
+
 </LinearLayout>
+
