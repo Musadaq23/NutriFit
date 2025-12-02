@@ -27,3 +27,7 @@ output.json
 
 # Misc
 *.log
+
+# Gradle daemon + temp
+gradle/daemon/
+gradle/.tmp/
