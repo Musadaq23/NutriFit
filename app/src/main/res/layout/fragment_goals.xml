@@ -1,51 +1,134 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/tvGoalsTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Goals"
-        android:textSize="20sp"
-        android:textStyle="bold" />
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/tvGoalsData"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:text="No goals yet" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-    <Button
-        android:id="@+id/btnEditGoal"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Edit Goals" />
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="739dp"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-    <Button
-        android:id="@+id/btnDemoReminder"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Demo Reminder (10s)"
-        android:layout_marginTop="16dp"/>
+                <TextView
+                    android:id="@+id/tvGoalsTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Goals"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
 
-    <Button
-        android:id="@+id/btnDailyReminder"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Daily Reminder (8:00 PM)"
-        android:layout_marginTop="8dp"/>
+                <ProgressBar
+                    android:id="@+id/calorieProgressBar"
+                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                    android:layout_width="245dp"
+                    android:layout_height="225dp"
+                    android:layout_marginTop="36dp"
+                    android:indeterminate="false"
+                    android:max="100"
+                    android:min="0"
+                    android:progressDrawable="@drawable/circle_progressbar"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_bias="0.489"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
 
-    <Button
-        android:id="@+id/btnCancelReminder"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Cancel Reminders"
-        android:layout_marginTop="8dp"/>
+                <TextView
+                    android:id="@+id/tvGoalsData"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="No goals yet"
+                    app:layout_constraintBottom_toBottomOf="@+id/calorieProgressBar"
+                    app:layout_constraintEnd_toEndOf="@+id/calorieProgressBar"
+                    app:layout_constraintStart_toStartOf="@+id/calorieProgressBar"
+                    app:layout_constraintTop_toTopOf="@+id/calorieProgressBar" />
 
-</LinearLayout>
+                <Button
+                    android:id="@+id/btnEditGoal"
+                    android:layout_width="327dp"
+                    android:layout_height="49dp"
+                    android:layout_marginTop="8dp"
+                    android:text="Edit Goals"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/calorieProgressBar" />
+
+                <Button
+                    android:id="@+id/btnDailyReminder"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Set reminder"
+                    app:layout_constraintStart_toStartOf="@+id/reminderTime"
+                    app:layout_constraintTop_toBottomOf="@+id/reminderTime" />
+
+                <Button
+                    android:id="@+id/btnCancelReminder"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="48dp"
+                    android:text="Cancel Reminders"
+                    app:layout_constraintStart_toEndOf="@+id/btnDailyReminder"
+                    app:layout_constraintTop_toBottomOf="@+id/reminderDate" />
+
+                <TextView
+                    android:id="@+id/reminderDate"
+                    android:layout_width="205dp"
+                    android:layout_height="0dp"
+                    android:autoText="false"
+                    android:background="#F4F4F4"
+                    android:clickable="true"
+                    android:editable="false"
+                    android:ems="10"
+                    android:inputType="date"
+                    android:text="MM/DD/YYYY"
+                    android:textAlignment="center"
+                    android:textSize="24sp"
+                    app:layout_constraintBottom_toBottomOf="@+id/reminderTime"
+                    app:layout_constraintStart_toEndOf="@+id/reminderTime"
+                    app:layout_constraintTop_toTopOf="@+id/reminderTime"
+                    app:layout_constraintVertical_bias="0.0" />
+
+                <TextView
+                    android:id="@+id/reminderTime"
+                    android:layout_width="123dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:background="#F4F4F4"
+                    android:clickable="true"
+                    android:editable="false"
+                    android:ems="10"
+                    android:inputType="time"
+                    android:text="6:00AM"
+                    android:textAlignment="center"
+                    android:textSize="24sp"
+                    app:layout_constraintStart_toStartOf="@+id/btnEditGoal"
+                    app:layout_constraintTop_toBottomOf="@+id/btnEditGoal" />
+
+                <com.github.mikephil.charting.charts.BarChart
+                    android:id="@+id/goalChart"
+                    android:layout_width="325dp"
+                    android:layout_height="180dp"
+                    android:layout_marginTop="16dp"
+                    app:layout_constraintEnd_toEndOf="@+id/btnCancelReminder"
+                    app:layout_constraintHorizontal_bias="0.48"
+                    app:layout_constraintStart_toStartOf="@+id/btnDailyReminder"
+                    app:layout_constraintTop_toBottomOf="@+id/btnDailyReminder"
+                    />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </LinearLayout>
+    </ScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>
