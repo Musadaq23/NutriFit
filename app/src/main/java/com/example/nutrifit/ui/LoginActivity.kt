@@ -62,7 +62,11 @@ class LoginActivity : AppCompatActivity() {
         }
 
         goToRegister.setOnClickListener {
-            startActivity(Intent(this, RegisterActivity::class.java))
+            val intent = Intent(
+                this@LoginActivity,
+                com.example.nutrifit.ui.RegisterActivity::class.java  // fully qualified
+            )
+            startActivity(intent)
         }
     }
     private fun openMainAndFinish() {
