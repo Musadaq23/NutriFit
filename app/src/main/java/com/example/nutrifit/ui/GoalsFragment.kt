@@ -240,7 +240,7 @@ class GoalsFragment : Fragment() {
 
         var goalEntries: ArrayList <BarEntry> = ArrayList<BarEntry>()
 
-        //Default data entries
+        //Test data entries
         goalEntries.add(0, BarEntry(1f,1f))
         goalEntries.add(1, BarEntry(2f,2f))
         goalEntries.add(2, BarEntry(3f,3f))
