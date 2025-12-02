@@ -82,7 +82,47 @@ class ProfileFragment : Fragment() {
                 "weight" to weight
             )
 
+            db.collection("users")
+                .document(uid)
+                .set(updates, SetOptions.merge())
+                .addOnSuccessListener {
+                    binding.tvName.text =
+                        if (displayName.isNotBlank()) displayName else binding.tvName.text
+                    Toast.makeText(requireContext(), "Profile saved.", Toast.LENGTH_SHORT).show()
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(
+                        requireContext(),
+                        e.localizedMessage ?: "Failed to save profile.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+        }
 
+        binding.btnSignOut.setOnClickListener {
+            auth.signOut()
+            goToLogin()
+        }
 
+        binding.btnHelp.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.main_fragment_container, HelpFragment())
+                .addToBackStack(null)
+                .commit()
+        }
+    }
+
+    private fun goToLogin() {
+        val intent = Intent(requireContext(), LoginActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        startActivity(intent)
+        requireActivity().finish()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
 }
 
