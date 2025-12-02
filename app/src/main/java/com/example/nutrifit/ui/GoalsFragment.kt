@@ -35,10 +35,10 @@ class GoalsFragment : Fragment() {
         _binding = FragmentGoalsBinding.inflate(inflater, container, false)
 
         createChart()
-        calcPercent(1200, 2200)
+        calcPercent(1200, 0)
 
         binding.tvGoalsTitle.text = "Goals"
-        binding.tvGoalsData.text = "Set a goal to start tracking your progress.”Set a goal to start tracking your progress."
+        binding.tvGoalsData.text = "Set a goal to start \ntracking your progress."
         //binding.tvGoalsData?.text = "Daily calories: 2200\nWorkouts per week: 4"
 
         //On click listener for time
@@ -208,8 +208,17 @@ class GoalsFragment : Fragment() {
     //Calculate percentage to goal, apply to progress bar.
     private fun calcPercent(C: Int, G: Int ){
         val current: Int = C
-        val goal: Int = G
-        val percent: Int =   100 * current/goal
+        var goal: Int = G
+        val percent: Int
+
+        //No dividing by zero dumbass.
+        if(goal == 0) {
+            percent = 100
+        }
+
+        else {
+            percent = 100 * current/goal
+        }
 
         //send update to progress bar
         lifecycleScope.launch {
@@ -239,10 +248,6 @@ class GoalsFragment : Fragment() {
         goalEntries.add(4, BarEntry(5f,5f))
         goalEntries.add(5, BarEntry(6f,6f))
         goalEntries.add(6, BarEntry(7f,7f))
-
-        //Adjust chart visuals
-        var yAxis: YAxis = binding.goalChart.getAxisLeft()
-        yAxis.setLabelCount(0)
 
         //Assigns  to variables to be pushed to chart
         var dataSet: BarDataSet = BarDataSet(goalEntries, "Minutes worked out")
