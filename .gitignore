@@ -31,3 +31,7 @@ output.json
 # Gradle daemon + temp
 gradle/daemon/
 gradle/.tmp/
+
+# Firebase config
+app/google-services.json
+**/google-services.json
