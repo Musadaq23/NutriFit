@@ -2,16 +2,18 @@ package com.example.nutrifit.ui
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
-import com.google.firebase.auth.FirebaseAuth
-import android.widget.Toast
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
-import com.example.nutrifit.R
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import com.example.nutrifit.MainActivity
+import com.example.nutrifit.R
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthException
 
 class LoginActivity : AppCompatActivity() {
+
     private lateinit var auth: FirebaseAuth
     private lateinit var email: EditText
     private lateinit var password: EditText
@@ -44,7 +46,8 @@ class LoginActivity : AppCompatActivity() {
             }
 
             if (passwordText.length < 6) {
-                Toast.makeText(this, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Password must be at least 6 characters", Toast.LENGTH_SHORT)
+                    .show()
                 return@setOnClickListener
             }
 
@@ -53,31 +56,30 @@ class LoginActivity : AppCompatActivity() {
                     openMainAndFinish()
                 }
                 .addOnFailureListener { e ->
-                    Toast.makeText(
-                        this,
-                        e.localizedMessage ?: "Login failed. Check your email or password.",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    val message = if (e is FirebaseAuthException) {
+                        when (e.errorCode) {
+                            "ERROR_WRONG_PASSWORD" -> "Incorrect password."
+                            "ERROR_USER_NOT_FOUND" -> "No account found for that email."
+                            else -> e.localizedMessage ?: "Login failed."
+                        }
+                    } else {
+                        e.localizedMessage ?: "Login failed."
+                    }
+
+                    Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
                 }
         }
 
         goToRegister.setOnClickListener {
-            val intent = Intent(
-                this@LoginActivity,
-                com.example.nutrifit.ui.RegisterActivity::class.java  // fully qualified
-            )
-            startActivity(intent)
+            startActivity(Intent(this, RegisterActivity::class.java))
         }
     }
+
     private fun openMainAndFinish() {
-        startActivity(
-            Intent(this, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            }
-        )
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        startActivity(intent)
         finish()
-
-
     }
-
 }
