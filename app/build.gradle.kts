@@ -36,7 +36,6 @@ android {
         jvmTarget = "11"
     }
 
-    // 👇 turn off Compose and enable ViewBinding
     buildFeatures {
         viewBinding = true
     }
@@ -48,6 +47,7 @@ dependencies {
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.fragment:fragment-ktx:1.8.2")
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
     implementation(platform("com.google.firebase:firebase-bom:33.3.0"))

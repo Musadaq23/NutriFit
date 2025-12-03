@@ -3,6 +3,7 @@
 gradle/caches/
 **/build/
 build/
+gradle/kotlin-profile/
 
 # Local properties
 local.properties
