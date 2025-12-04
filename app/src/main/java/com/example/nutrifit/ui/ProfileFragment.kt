@@ -42,19 +42,19 @@ class ProfileFragment : Fragment() {
 
         val uid = user.uid
 
+        binding.tvEmail.text = user.email ?: ""
+
         db.collection("users")
             .document(uid)
             .get()
             .addOnSuccessListener { snapshot ->
                 val displayName = snapshot.getString("displayName") ?: ""
-                val email = snapshot.getString("email") ?: user.email.orEmpty()
                 val age = snapshot.getLong("age")
                 val gender = snapshot.getString("gender") ?: ""
                 val height = snapshot.getLong("height")
                 val weight = snapshot.getLong("weight")
 
                 binding.tvName.text = if (displayName.isNotBlank()) displayName else "User"
-                binding.tvEmail.text = email
 
                 binding.etDisplayName.setText(displayName)
                 binding.etAge.setText(age?.toString() ?: "")
@@ -93,7 +93,7 @@ class ProfileFragment : Fragment() {
                 .addOnFailureListener { e ->
                     Toast.makeText(
                         requireContext(),
-                        e.localizedMessage ?: "Failed to save profile.",
+                        e.localizedMessage ?: "Failed to load profile.",
                         Toast.LENGTH_SHORT
                     ).show()
                 }

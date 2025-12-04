@@ -18,7 +18,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="email@example.com" />
+        android:text="" />
 
     <EditText
         android:id="@+id/etDisplayName"
@@ -63,14 +63,18 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="Save profile" />
+        android:text="Save Profile"
+        android:backgroundTint="#4CAF50"
+        android:textColor="#FFFFFF" />
 
     <Button
         android:id="@+id/btnSignOut"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Sign out" />
+        android:text="Sign Out"
+        android:backgroundTint="#F44336"
+        android:textColor="#FFFFFF" />
 
 
     <Button

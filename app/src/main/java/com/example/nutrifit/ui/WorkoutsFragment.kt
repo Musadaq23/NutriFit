@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.LinearLayout
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.nutrifit.WorkoutEntity
@@ -21,7 +22,9 @@ class WorkoutsFragment : Fragment() {
     private var _binding: FragmentWorkoutsBinding? = null
     private val binding get() = _binding!!
 
-    private val workouts = mutableListOf<WorkoutEntity>()
+    private val viewModel: WorkoutsViewModel by activityViewModels()
+
+    private val items = mutableListOf<WorkoutEntity>()
     private lateinit var adapter: WorkoutAdapter
 
     override fun onCreateView(
@@ -37,9 +40,16 @@ class WorkoutsFragment : Fragment() {
 
         binding.tvWorkoutsTitle.text = "Workouts"
 
-        adapter = WorkoutAdapter(workouts)
+        adapter = WorkoutAdapter(items)
         binding.rvWorkouts.layoutManager = LinearLayoutManager(requireContext())
         binding.rvWorkouts.adapter = adapter
+
+        viewModel.workouts.observe(viewLifecycleOwner) { list ->
+            items.clear()
+            items.addAll(list)
+            adapter.notifyDataSetChanged()
+            updateEmptyState()
+        }
 
         updateEmptyState()
 
@@ -67,16 +77,13 @@ class WorkoutsFragment : Fragment() {
         }
 
         AlertDialog.Builder(context)
-            .setTitle("Add Workout"
-            )
+            .setTitle("Add Workout")
             .setView(layout)
             .setPositiveButton("Save") { _, _ ->
                 val type = etType.text.toString().trim()
                 val durationText = etDuration.text.toString().trim()
 
-                if (type.isEmpty() || durationText.isEmpty()) {
-                    return@setPositiveButton
-                }
+                if (type.isEmpty() || durationText.isEmpty()) return@setPositiveButton
 
                 val duration = durationText.toIntOrNull() ?: return@setPositiveButton
                 val date = LocalDate.now().toString()
@@ -88,17 +95,14 @@ class WorkoutsFragment : Fragment() {
                     durationMinutes = duration
                 )
 
-                workouts.add(0, workout)
-                adapter.notifyItemInserted(0)
-                binding.rvWorkouts.scrollToPosition(0)
-                updateEmptyState()
+                viewModel.addWorkout(workout)
             }
             .setNegativeButton("Cancel", null)
             .show()
     }
 
     private fun updateEmptyState() {
-        if (workouts.isEmpty()) {
+        if (items.isEmpty()) {
             binding.tvEmpty.visibility = View.VISIBLE
             binding.rvWorkouts.visibility = View.GONE
         } else {

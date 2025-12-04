@@ -53,6 +53,7 @@ class LoginActivity : AppCompatActivity() {
 
             auth.signInWithEmailAndPassword(emailText, passwordText)
                 .addOnSuccessListener {
+                    Toast.makeText(this, "Welcome back!", Toast.LENGTH_SHORT).show()
                     openMainAndFinish()
                 }
                 .addOnFailureListener { e ->
@@ -72,6 +73,7 @@ class LoginActivity : AppCompatActivity() {
 
         goToRegister.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
+            overridePendingTransition(android.R.anim.slide_in_left, android.R.anim.slide_out_right)
         }
     }
 
@@ -80,6 +82,7 @@ class LoginActivity : AppCompatActivity() {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
         startActivity(intent)
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         finish()
     }
 }

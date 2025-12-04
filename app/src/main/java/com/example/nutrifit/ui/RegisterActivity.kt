@@ -6,16 +6,16 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.example.nutrifit.R
 import com.example.nutrifit.MainActivity
+import com.example.nutrifit.R
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 class RegisterActivity : AppCompatActivity() {
 
     private lateinit var auth: FirebaseAuth
-
     private lateinit var db: FirebaseFirestore
+
     private lateinit var email: EditText
     private lateinit var password: EditText
     private lateinit var btnRegister: Button
@@ -56,7 +56,6 @@ class RegisterActivity : AppCompatActivity() {
                         return@addOnSuccessListener
                     }
 
-
                     val uid = user.uid
                     val profile = hashMapOf(
                         "email" to emailText,
@@ -70,16 +69,22 @@ class RegisterActivity : AppCompatActivity() {
                     db.collection("users")
                         .document(uid)
                         .set(profile)
-                        .addOnSuccessListener {
-                            Toast.makeText(this, "Account created.", Toast.LENGTH_SHORT).show()
+                        .addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                Toast.makeText(
+                                    this,
+                                    "Account created.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            } else {
+                                Toast.makeText(
+                                    this,
+                                    "Account created, but profile save failed.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+
                             openMainAndFinish()
-                        }
-                        .addOnFailureListener { e ->
-                            Toast.makeText(
-                                this,
-                                e.localizedMessage ?: "Failed to save profile.",
-                                Toast.LENGTH_SHORT
-                            ).show()
                         }
                 }
                 .addOnFailureListener { e ->
@@ -93,6 +98,7 @@ class RegisterActivity : AppCompatActivity() {
 
         btnGoToLogin.setOnClickListener {
             startActivity(Intent(this, LoginActivity::class.java))
+            overridePendingTransition(android.R.anim.slide_in_left, android.R.anim.slide_out_right)
             finish()
         }
     }
@@ -102,6 +108,7 @@ class RegisterActivity : AppCompatActivity() {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
         startActivity(intent)
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         finish()
     }
 }
