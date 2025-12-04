@@ -61,7 +61,7 @@
                     android:layout_width="327dp"
                     android:layout_height="49dp"
                     android:layout_marginTop="8dp"
-                    android:text="Edit Goals"
+                    android:text="Set Calorie Goal"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/calorieProgressBar" />
@@ -127,6 +127,35 @@
                     app:layout_constraintStart_toStartOf="@+id/btnDailyReminder"
                     app:layout_constraintTop_toBottomOf="@+id/btnDailyReminder"
                     />
+
+                <ProgressBar
+                    android:id="@+id/workoutProgressBar"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:indeterminate="false"
+                    android:max="100"
+                    app:layout_constraintEnd_toEndOf="@+id/goalChart"
+                    app:layout_constraintStart_toStartOf="@+id/goalChart"
+                    app:layout_constraintTop_toBottomOf="@+id/goalChart" />
+
+                <TextView
+                    android:id="@+id/textView"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="No workouts logged this week."
+                    app:layout_constraintEnd_toEndOf="@+id/workoutProgressBar"
+                    app:layout_constraintStart_toStartOf="@+id/workoutProgressBar"
+                    app:layout_constraintTop_toBottomOf="@+id/workoutProgressBar" />
+
+                <Button
+                    android:id="@+id/btnWorkoutGoal"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="Set workout goal"
+                    app:layout_constraintEnd_toEndOf="@+id/textView"
+                    app:layout_constraintStart_toStartOf="@+id/textView"
+                    app:layout_constraintTop_toBottomOf="@+id/textView" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
         </LinearLayout>

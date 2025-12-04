@@ -15,13 +15,18 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
+import com.example.nutrifit.CalorieGoalEntity
 import com.example.nutrifit.ReminderReceiver
+import com.example.nutrifit.WorkoutEntity
 import com.example.nutrifit.databinding.FragmentGoalsBinding
-import com.github.mikephil.charting.components.YAxis
-import com.github.mikephil.charting.data.BarEntry
-import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarData
+import com.github.mikephil.charting.data.BarDataSet
+import com.github.mikephil.charting.data.BarEntry
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -31,15 +36,22 @@ class GoalsFragment : Fragment() {
     private var _binding: FragmentGoalsBinding? = null
     private val binding get() = _binding!!
 
+    private lateinit var auth: FirebaseAuth
+    private lateinit var db: FirebaseFirestore
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentGoalsBinding.inflate(inflater, container, false)
+            auth = FirebaseAuth.getInstance()
+            db = FirebaseFirestore.getInstance()
+            return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?){
+        super.onViewCreated(view, savedInstanceState)
+
+        getCalorieGoal()
 
         createChart()
-        calcPercent(1200, 0)
-
-        binding.tvGoalsTitle.text = "Goals"
-        binding.tvGoalsData.text = "Set a goal to start \ntracking your progress."
-        //binding.tvGoalsData?.text = "Daily calories: 2200\nWorkouts per week: 4"
 
         //On click listener for time
         binding.reminderTime.setOnClickListener{
@@ -56,17 +68,17 @@ class GoalsFragment : Fragment() {
             calorieGoalInputDialog()
         }
 
+        //On click listener for reminder button.
         binding.btnDailyReminder.setOnClickListener {
             scheduleDaily(20, 0, "Evening check-in", "Log today’s meals and workouts.")
             Toast.makeText(requireContext(), "Daily reminder set for 8:00 PM", Toast.LENGTH_SHORT).show()
         }
 
+        //On click listener for reminder cancel button
         binding.btnCancelReminder.setOnClickListener {
             cancelReminders()
             Toast.makeText(requireContext(), "Reminders canceled", Toast.LENGTH_SHORT).show()
         }
-
-        return binding.root
     }
 
     private fun pendingIntent(title: String, text: String): PendingIntent {
@@ -82,18 +94,28 @@ class GoalsFragment : Fragment() {
         )
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
+    //Go to Login function pulled from Profile Fragment
+    private fun goToLogin() {
+        val intent = Intent(requireContext(), LoginActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        startActivity(intent)
+        requireActivity().finish()
+    }
+
+
+    ////////////////////////////////////
+    //[*]REMINDER RELATED FUNCTIONS[*]//
+    ////////////////////////////////////
+
+    //Alarm manager
     private fun alarmMgr(): AlarmManager =
         requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
-
-    // DEMO: fires once in N seconds (easy for presentation)
-    private fun scheduleInSeconds(seconds: Int, title: String, text: String) {
-        val triggerAt = System.currentTimeMillis() + seconds * 1000L
-        alarmMgr().setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            triggerAt,
-            pendingIntent(title, text)
-        )
-    }
 
     // daily at fixed hour/minute
     private fun scheduleDaily(hour: Int, minute: Int, title: String, text: String) {
@@ -113,14 +135,30 @@ class GoalsFragment : Fragment() {
         )
     }
 
+    //Cancel reminders
     private fun cancelReminders() {
         alarmMgr().cancel(pendingIntent("", "")) // same PI signature cancels
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+
+    ///////////////////////////////////
+    //[*]WORKOUT RELATED FUNCTIONS[*]//
+    ///////////////////////////////////
+
+    //Update goal dialog function
+
+
+    //Adds workout goal to DB
+
+    //Retrieves list of workouts
+    fun getWorkoutList(){
+
     }
+
+
+    ///////////////////////////////////
+    //[*]CALORIE RELATED FUNCTIONS[*]//
+    ///////////////////////////////////
 
     //Update goal dialog function
     private fun calorieGoalInputDialog(){
@@ -154,13 +192,71 @@ class GoalsFragment : Fragment() {
                 binding.tvGoalsData.text = "Daily Calorie goal: $inpValue"
 
                 dialog.dismiss()
-                calcPercent(1200, inpValue)
+                calcCaloriePercent(1200, inpValue)
+                val goal = CalorieGoalEntity(
+                    goal = inpValue
+                )
+
+                setCalorieGoal(goal)
             }
             .setNegativeButton("Cancel") {dialog, _ ->
                 dialog.dismiss()
             }
             .show()
     }
+
+    //Adds calorie goal to DB
+    fun setCalorieGoal(caloricGoal: CalorieGoalEntity){
+        val user = auth.currentUser ?: return
+
+        val data = hashMapOf(
+            "caloricGoal" to caloricGoal.goal,
+        )
+
+        db.collection("users")
+            .document(user.uid)
+            .collection("Goal")
+            .document("caloricGoal")
+            .set(data)
+    }
+
+    //retrieves calorie data and updates text accordingly.
+    fun getCalorieGoal() {
+
+        val user = auth.currentUser
+        if (user == null) {
+            goToLogin()
+            return
+        }
+
+        val uid = user.uid
+
+        db.collection("users")
+            .document(uid)
+            .collection("Goal")
+            .document("caloricGoal")
+            .get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    println("Successfully retrieved DB collection")
+                    val calorieGoal: Int = doc.getLong("caloricGoal")?.toInt() ?: 0
+                    println("retrieved stored value: $calorieGoal")
+
+                    //Update goal textview
+                    binding.tvGoalsData.text = if (calorieGoal > 0) "Daily Calorie goal: $calorieGoal" else "Set a goal to start \ntracking your progress."
+                    calcCaloriePercent(1200, calorieGoal)
+                }
+
+                else {
+                    println("Document does not exist")
+                }
+            }
+    }
+
+
+    /////////////////////////////////
+    //[*]TIME AND DATE SELECTORS[*]//
+    /////////////////////////////////
 
     //Date Picker
     private fun showDatePicker(){
@@ -205,40 +301,72 @@ class GoalsFragment : Fragment() {
         timePicker.show()
     }
 
-    //Calculate percentage to goal, apply to progress bar.
-    private fun calcPercent(C: Int, G: Int ){
-        val current: Int = C
-        var goal: Int = G
-        val percent: Int
+
+    ///////////////////////////////
+    //[*]CALCULATION FUNCTIONS[*]//
+    ///////////////////////////////
+
+    //Calculate percentage to goal for Calorie Bar
+    private fun calcCaloriePercent(c: Int, g: Int ){
+        val current: Int = c
+        val goal: Int = g
 
         //No dividing by zero dumbass.
-        if(goal == 0) {
-            percent = 100
-        }
-
-        else {
-            percent = 100 * current/goal
+        val percent: Int = if(goal == 0) {
+            100
+        } else {
+            100 * current/goal
         }
 
         //send update to progress bar
         lifecycleScope.launch {
-            progressBar(percent)
+            calorieProgressBar(percent)
         }
     }
 
-    //Updates progress bar overtime based on value given
-    private suspend fun progressBar(progress: Int){
+    //Calculate percentage to goal for Workout Bar
+    private fun calcWorkoutPercent(c: Int, g: Int ){
+        val current: Int = c
+        val goal: Int = g
+
+        //No dividing by zero dumbass.
+        val percent: Int = if(goal == 0) {
+            100
+        } else {
+            100 * current/goal
+        }
+
+        //send update to progress bar
+        lifecycleScope.launch {
+            workoutProgressBar(percent)
+        }
+    }
+
+    /////////////////////////////////
+    //[*]CHART RELATED FUNCTIONS[*]//
+    /////////////////////////////////
+
+    //Updates calorie progress bar
+    private suspend fun calorieProgressBar(progress: Int){
         for (i in 1..progress){
                 binding.calorieProgressBar.setProgress(i, true)
                 delay(35)
         }
     }
 
+    //Updates workout progress bar
+    private suspend fun workoutProgressBar(progress: Int){
+        for (i in 1..progress){
+            binding.workoutProgressBar.setProgress(i, true)
+            delay(35)
+        }
+    }
+
     //For creation of the "work out" chart at the bottom of the fragment
     private fun createChart(){
-        binding.goalChart.getAxisRight().setDrawLabels(false)
+        binding.goalChart.axisRight.setDrawLabels(false)
 
-        var goalEntries: ArrayList <BarEntry> = ArrayList<BarEntry>()
+        val goalEntries: ArrayList <BarEntry> = ArrayList<BarEntry>()
 
         //Test data entries
         goalEntries.add(0, BarEntry(1f,1f))
@@ -250,8 +378,8 @@ class GoalsFragment : Fragment() {
         goalEntries.add(6, BarEntry(7f,7f))
 
         //Assigns  to variables to be pushed to chart
-        var dataSet: BarDataSet = BarDataSet(goalEntries, "Minutes worked out")
-        var barData: BarData = BarData(dataSet)
+        val dataSet: BarDataSet = BarDataSet(goalEntries, "Minutes worked out")
+        val barData: BarData = BarData(dataSet)
 
         binding.goalChart.setData(barData)
     }

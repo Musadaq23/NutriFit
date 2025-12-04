@@ -49,18 +49,8 @@ class ProfileFragment : Fragment() {
             .get()
             .addOnSuccessListener { snapshot ->
                 val displayName = snapshot.getString("displayName") ?: ""
-                val age = snapshot.getLong("age")
-                val gender = snapshot.getString("gender") ?: ""
-                val height = snapshot.getLong("height")
-                val weight = snapshot.getLong("weight")
 
                 binding.tvName.text = if (displayName.isNotBlank()) displayName else "User"
-
-                binding.etDisplayName.setText(displayName)
-                binding.etAge.setText(age?.toString() ?: "")
-                binding.etGender.setText(gender)
-                binding.etHeight.setText(height?.toString() ?: "")
-                binding.etWeight.setText(weight?.toString() ?: "")
             }
 
         binding.btnSaveProfile.setOnClickListener {
