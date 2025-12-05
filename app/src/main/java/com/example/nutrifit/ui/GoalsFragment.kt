@@ -27,8 +27,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import java.util.Calendar
+
 
 class GoalsFragment : Fragment() {
 
@@ -278,10 +278,18 @@ class GoalsFragment : Fragment() {
             }
     }
 
-    //Calculates the total workout time for the week
+    //[NEEDS TO ADD EACH DAY OF THE WEEK REGARDLESS OF 0 VALUES AND TOTAL IT UP]
+    //Calculates the total workout time for the week [WIP]
     fun weeklyWorkoutTotal(){
 
     }
+
+    //[Needs to reset after every week, missed days should = 0]
+    //Save daily values for week
+    fun savedWeeklyValues(){
+
+    }
+
 
     ///////////////////////////////////
     //[*]CALORIE RELATED FUNCTIONS[*]//
@@ -436,6 +444,8 @@ class GoalsFragment : Fragment() {
     //[*]CALCULATION FUNCTIONS[*]//
     ///////////////////////////////
 
+
+    //[REQUIRES NON-STATIC INTAKE FROM MEALS WHEN FUNCTIONAL]
     //Calculate percentage to goal for Calorie Bar
     private fun calcCaloriePercent(c: Int, g: Int ){
         val current: Int = c
@@ -454,6 +464,7 @@ class GoalsFragment : Fragment() {
         }
     }
 
+    //[ACCRUED WEEKLY VALUE TO AS C:]
     //Calculate percentage to goal for Workout Bar
     private fun calcWorkoutPercent(c: Int, g: Int ){
         val current: Int = c
@@ -492,7 +503,8 @@ class GoalsFragment : Fragment() {
         }
     }
 
-    //For creation of the "work out" chart at the bottom of the fragment
+    //[USE THIS METHOD TO INSERT AND UPDATE VALUES IN THE CHART]
+    //Creates the chart [WIP]
     private fun createChart(){
         binding.goalChart.axisRight.setDrawLabels(false)
 
