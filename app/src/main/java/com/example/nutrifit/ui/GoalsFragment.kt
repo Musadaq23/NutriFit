@@ -28,15 +28,27 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Calendar
+import androidx.fragment.app.activityViewModels
+import com.example.nutrifit.WorkoutEntity
+import com.example.nutrifit.MealEntity
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 
 class GoalsFragment : Fragment() {
+
+    private val workoutsViewModel: WorkoutsViewModel by activityViewModels()
+    private val mealsViewModel: MealsViewModel by activityViewModels()
+
+    private var weeklyWorkoutGoal: Int = 0
+    private var dailyCalorieGoal: Int = 0
 
     private var _binding: FragmentGoalsBinding? = null
     private val binding get() = _binding!!
 
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseFirestore
+
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentGoalsBinding.inflate(inflater, container, false)
@@ -50,13 +62,20 @@ class GoalsFragment : Fragment() {
 
         getCalorieGoal()
         getWorkoutGoal()
+        workoutsViewModel.workouts.observe(viewLifecycleOwner) { workouts ->
+            updateWorkoutFromData(workouts)
+        }
+
+        mealsViewModel.meals.observe(viewLifecycleOwner) { meals ->
+            updateCaloriesFromData(meals)
+        }
 
 
         dailyWorkoutTotal {
             totalDuration -> println("Total duration = $totalDuration")
         }
 
-        createChart()
+        createChart(List(7) { 0 })
 
         //On click listener for time
         binding.reminderTime.setOnClickListener{
@@ -197,7 +216,8 @@ class GoalsFragment : Fragment() {
                 binding.tvWorkoutGoal.text = "Your current workout goal this week is: $inpValue minutes"
 
                 dialog.dismiss()
-                calcWorkoutPercent(50, inpValue)
+                weeklyWorkoutGoal = inpValue
+                workoutsViewModel.workouts.value?.let { updateWorkoutFromData(it) }
                 val goal = WorkoutGoalEntity(
                     goal = inpValue
                 )
@@ -246,10 +266,12 @@ class GoalsFragment : Fragment() {
                     val Goal: Int = doc.getLong("workoutGoal")?.toInt() ?: 0
                     println("retrieved stored value: $Goal")
 
+                    weeklyWorkoutGoal = Goal
+
                     //Update goal textview
-                    binding.tvWorkoutGoal.text = if (Goal > 0) "Weekly workout goal: $Goal" else "No workouts logged this week."
-                    weeklyWorkoutTotal()
-                    calcWorkoutPercent(1, Goal)
+                    binding.tvWorkoutGoal.text = if (Goal > 0) "Weekly workout goal: $Goal"
+                    else "No workouts logged this week."
+                    workoutsViewModel.workouts.value?.let { updateWorkoutFromData(it) }
                 }
 
                 else {
@@ -276,18 +298,6 @@ class GoalsFragment : Fragment() {
             .addOnFailureListener {
                 callback(0)
             }
-    }
-
-    //[NEEDS TO ADD EACH DAY OF THE WEEK REGARDLESS OF 0 VALUES AND TOTAL IT UP]
-    //Calculates the total workout time for the week [WIP]
-    fun weeklyWorkoutTotal(){
-
-    }
-
-    //[Needs to reset after every week, missed days should = 0]
-    //Save daily values for week
-    fun savedWeeklyValues(){
-
     }
 
 
@@ -327,12 +337,14 @@ class GoalsFragment : Fragment() {
 
                 dialog.dismiss()
 
-                val calorieTemp: Int = 350 + 600 + 950
+                dailyCalorieGoal = inpValue
 
-                calcCaloriePercent(calorieTemp, inpValue)
                 val goal = CalorieGoalEntity(
                     goal = inpValue
                 )
+
+                mealsViewModel.meals.value?.let { updateCaloriesFromData(it) }
+
 
                 setCalorieGoal(goal)
             }
@@ -377,13 +389,17 @@ class GoalsFragment : Fragment() {
                 if (doc.exists()) {
                     println("Successfully retrieved DB collection")
                     val calorieGoal: Int = doc.getLong("caloricGoal")?.toInt() ?: 0
-                    val calorieTemp: Int = 350 + 600 + 950
                     println("retrieved stored value: $calorieGoal")
 
-                    //Update goal textview
-                    binding.tvGoalsData.text = if (calorieGoal > 0) "Daily Calorie goal: $calorieGoal" else "Set a goal to start \ntracking your progress."
-                    calcCaloriePercent(calorieTemp, calorieGoal)
+                    dailyCalorieGoal = calorieGoal
+
+                    binding.tvGoalsData.text =
+                        if (calorieGoal > 0) "Daily Calorie goal: $calorieGoal"
+                        else "Set a goal to start \ntracking your progress."
+
+                    mealsViewModel.meals.value?.let { updateCaloriesFromData(it) }
                 }
+
 
                 else {
                     println("Document does not exist")
@@ -447,41 +463,23 @@ class GoalsFragment : Fragment() {
 
     //[REQUIRES NON-STATIC INTAKE FROM MEALS WHEN FUNCTIONAL]
     //Calculate percentage to goal for Calorie Bar
-    private fun calcCaloriePercent(c: Int, g: Int ){
-        val current: Int = c
-        val goal: Int = g
-
-        //No dividing by zero dumbass.
-        val percent: Int = if(goal == 0) {
-            100
-        } else {
-            100 * current/goal
-        }
-
-        //send update to progress bar
+    private fun calcCaloriePercent(current: Int, goal: Int) {
+        val percent = if (goal <= 0) 0 else (current * 100 / goal).coerceIn(0, 100)
         lifecycleScope.launch {
             calorieProgressBar(percent)
         }
     }
 
+
     //[ACCRUED WEEKLY VALUE TO AS C:]
     //Calculate percentage to goal for Workout Bar
-    private fun calcWorkoutPercent(c: Int, g: Int ){
-        val current: Int = c
-        val goal: Int = g
-
-        //No dividing by zero dumbass.
-        val percent: Int = if(goal == 0) {
-            100
-        } else {
-            100 * current/goal
-        }
-
-        //send update to progress bar
+    private fun calcWorkoutPercent(current: Int, goal: Int) {
+        val percent = if (goal <= 0) 0 else (current * 100 / goal).coerceIn(0, 100)
         lifecycleScope.launch {
             workoutProgressBar(percent)
         }
     }
+
 
     /////////////////////////////////
     //[*]CHART RELATED FUNCTIONS[*]//
@@ -505,25 +503,75 @@ class GoalsFragment : Fragment() {
 
     //[USE THIS METHOD TO INSERT AND UPDATE VALUES IN THE CHART]
     //Creates the chart [WIP]
-    private fun createChart(){
+    private fun createChart(weekMinutes: List<Int>) {
         binding.goalChart.axisRight.setDrawLabels(false)
+        binding.goalChart.description.isEnabled = false
+        binding.goalChart.axisLeft.axisMinimum = 0f
+        binding.goalChart.setScaleEnabled(false)
 
-        val goalEntries: ArrayList <BarEntry> = ArrayList<BarEntry>()
+        val entries = ArrayList<BarEntry>()
+        weekMinutes.forEachIndexed { index, minutes ->
+            entries.add(BarEntry(index.toFloat(), minutes.toFloat()))
+        }
 
-        //Test data entries
-        goalEntries.add(0, BarEntry(1f,1f))
-        goalEntries.add(1, BarEntry(2f,2f))
-        goalEntries.add(2, BarEntry(3f,3f))
-        goalEntries.add(3, BarEntry(4f,4f))
-        goalEntries.add(4, BarEntry(5f,5f))
-        goalEntries.add(5, BarEntry(6f,6f))
-        goalEntries.add(6, BarEntry(7f,7f))
 
         //Assigns  to variables to be pushed to chart
-        val dataSet: BarDataSet = BarDataSet(goalEntries, "Minutes worked out")
+        val dataSet = BarDataSet(entries, "Minutes worked out")
         val barData: BarData = BarData(dataSet)
 
         binding.goalChart.setData(barData)
+        binding.goalChart.invalidate()
     }
+
+
+
+    private fun updateWorkoutFromData(workouts: List<WorkoutEntity>) {
+        val today = LocalDate.now()
+        val weekStart = today.minusDays(6)
+
+        var weekTotal = 0
+        val perDay = MutableList(7) { 0 }
+
+        for (w in workouts) {
+            try {
+                val d = LocalDate.parse(w.date)
+                if (!d.isBefore(weekStart) && !d.isAfter(today)) {
+                    weekTotal += w.durationMinutes
+                    val index = (d.toEpochDay() - weekStart.toEpochDay()).toInt()
+                    if (index in 0..6) {
+                        perDay[index] += w.durationMinutes
+                    }
+                }
+            } catch (_: Exception) {
+
+            }
+        }
+
+        // update
+        calcWorkoutPercent(weekTotal, weeklyWorkoutGoal)
+
+        //  chart
+        createChart(perDay)
+    }
+
+    private fun updateCaloriesFromData(meals: List<MealEntity>) {
+        val today = LocalDate.now()
+        var todayCalories = 0
+
+        for (m in meals) {
+            try {
+                val dt = LocalDateTime.parse(m.dateTime)
+                if (dt.toLocalDate() == today) {
+                    todayCalories += m.calories
+                }
+            } catch (_: Exception) {
+
+            }
+        }
+
+        // update
+        calcCaloriePercent(todayCalories, dailyCalorieGoal)
+    }
+
 }
 

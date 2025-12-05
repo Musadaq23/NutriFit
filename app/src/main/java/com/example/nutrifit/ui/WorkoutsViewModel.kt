@@ -7,6 +7,7 @@ import com.example.nutrifit.WorkoutEntity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.Query
 
 class WorkoutsViewModel : ViewModel() {
 
@@ -33,7 +34,7 @@ class WorkoutsViewModel : ViewModel() {
         listenerRegistration = db.collection("users")
             .document(uid)
             .collection("workouts")
-            .orderBy("date")
+            .orderBy("date", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) {
                     return@addSnapshotListener
@@ -48,7 +49,7 @@ class WorkoutsViewModel : ViewModel() {
                     val calories = doc.getLong("caloriesBurned")?.toInt()
 
                     WorkoutEntity(
-                        id = 0L,
+                        id = doc.id,
                         date = date,
                         type = type,
                         durationMinutes = duration,
@@ -58,7 +59,7 @@ class WorkoutsViewModel : ViewModel() {
                     )
                 }
 
-                _workouts.value = list.reversed()
+                _workouts.value = list
             }
     }
 
@@ -78,6 +79,37 @@ class WorkoutsViewModel : ViewModel() {
             .document(user.uid)
             .collection("workouts")
             .add(data)
+    }
+
+    fun updateWorkout(workout: WorkoutEntity) {
+        val user = auth.currentUser ?: return
+        if (workout.id.isBlank()) return
+
+        val data = hashMapOf(
+            "date" to workout.date,
+            "type" to workout.type,
+            "durationMinutes" to workout.durationMinutes,
+            "intensity" to workout.intensity,
+            "notes" to workout.notes,
+            "caloriesBurned" to workout.caloriesBurned
+        )
+
+        db.collection("users")
+            .document(user.uid)
+            .collection("workouts")
+            .document(workout.id)
+            .set(data)
+    }
+
+    fun deleteWorkout(workout: WorkoutEntity) {
+        val user = auth.currentUser ?: return
+        if (workout.id.isBlank()) return
+
+        db.collection("users")
+            .document(user.uid)
+            .collection("workouts")
+            .document(workout.id)
+            .delete()
     }
 
     override fun onCleared() {
