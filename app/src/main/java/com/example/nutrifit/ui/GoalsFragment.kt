@@ -32,6 +32,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
+
 class GoalsFragment : Fragment() {
 
     private var _binding: FragmentGoalsBinding? = null
