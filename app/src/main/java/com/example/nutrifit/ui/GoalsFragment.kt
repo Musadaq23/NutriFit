@@ -15,12 +15,9 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
 import com.example.nutrifit.CalorieGoalEntity
 import com.example.nutrifit.ReminderReceiver
-import com.example.nutrifit.WorkoutEntity
 import com.example.nutrifit.WorkoutGoalEntity
 import com.example.nutrifit.databinding.FragmentGoalsBinding
 import com.github.mikephil.charting.data.BarData
@@ -52,6 +49,12 @@ class GoalsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         getCalorieGoal()
+        getWorkoutGoal()
+
+
+        dailyWorkoutTotal {
+            totalDuration -> println("Total duration = $totalDuration")
+        }
 
         createChart()
 
@@ -81,6 +84,12 @@ class GoalsFragment : Fragment() {
             cancelReminders()
             Toast.makeText(requireContext(), "Reminders canceled", Toast.LENGTH_SHORT).show()
         }
+
+        //On click listener for Workout goal button
+        binding.btnWorkoutGoal.setOnClickListener{
+            workoutGoalInputDialog()
+        }
+
     }
 
     private fun pendingIntent(title: String, text: String): PendingIntent {
@@ -114,6 +123,16 @@ class GoalsFragment : Fragment() {
     ////////////////////////////////////
     //[*]REMINDER RELATED FUNCTIONS[*]//
     ////////////////////////////////////
+
+    // DEMO: fires once in N seconds (easy for presentation)
+    private fun scheduleInSeconds(seconds: Int, title: String, text: String) {
+        val triggerAt = System.currentTimeMillis() + seconds * 1000L
+        alarmMgr().setExactAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            triggerAt,
+            pendingIntent(title, text)
+        )
+    }
 
     //Alarm manager
     private fun alarmMgr(): AlarmManager =
@@ -178,7 +197,7 @@ class GoalsFragment : Fragment() {
                 binding.tvWorkoutGoal.text = "Your current workout goal this week is: $inpValue minutes"
 
                 dialog.dismiss()
-                calcWorkoutPercent(0, inpValue)
+                calcWorkoutPercent(50, inpValue)
                 val goal = WorkoutGoalEntity(
                     goal = inpValue
                 )
@@ -225,11 +244,10 @@ class GoalsFragment : Fragment() {
                 if (doc.exists()) {
                     println("Successfully retrieved DB collection")
                     val Goal: Int = doc.getLong("workoutGoal")?.toInt() ?: 0
-
                     println("retrieved stored value: $Goal")
 
                     //Update goal textview
-                    binding.tvGoalsData.text = if (Goal > 0) "Daily Calorie goal: $Goal" else "No workouts logged this week."
+                    binding.tvWorkoutGoal.text = if (Goal > 0) "Weekly workout goal: $Goal" else "No workouts logged this week."
                     weeklyWorkoutTotal()
                     calcWorkoutPercent(1, Goal)
                 }
@@ -241,13 +259,8 @@ class GoalsFragment : Fragment() {
     }
 
     //Calculates the total workout time for the day
-    fun dailyWorkoutTotal(callback: (Int) -> Unit) {
-        val user = auth.currentUser
-        if (user == null) {
-            goToLogin()
-            return
-        }
-
+    fun dailyWorkoutTotal(callback: (Int)-> Unit) {
+        val user = auth.currentUser ?: return callback(0)
         val uid = user.uid
 
         db.collection("users")
@@ -255,31 +268,28 @@ class GoalsFragment : Fragment() {
             .collection("workouts")
             .get()
             .addOnSuccessListener { snapshot ->
-                var totalDuration = 0
-
-                for (entryDoc in snapshot.documents) {
-                    db.collection("users")
-                    db.document(uid)
-                    db.collection("workouts")
-                        .get()
-                        .addOnSuccessListener { workoutsSnapshot ->
-                            for (workoutDoc in workoutsSnapshot.documents) {
-                                val duration = workoutDoc.getLong("durationMinutes")?.toInt() ?: 0
-                                totalDuration += duration
-                            }
-                            //Call the callback after processing this entry
-                            callback(totalDuration)
-                        }
-
+                val totalDuration = snapshot.documents.sumOf { doc ->
+                    doc.getLong("durationMinutes")?.toInt() ?: 0
                 }
+                callback(totalDuration)
             }
-
+            .addOnFailureListener {
+                callback(0)
+            }
     }
 
-    //Calculates the total workout time for the week
+    //[NEEDS TO ADD EACH DAY OF THE WEEK REGARDLESS OF 0 VALUES AND TOTAL IT UP]
+    //Calculates the total workout time for the week [WIP]
     fun weeklyWorkoutTotal(){
 
     }
+
+    //[Needs to reset after every week, missed days should = 0]
+    //Save daily values for week
+    fun savedWeeklyValues(){
+
+    }
+
 
     ///////////////////////////////////
     //[*]CALORIE RELATED FUNCTIONS[*]//
@@ -396,7 +406,7 @@ class GoalsFragment : Fragment() {
         val datePicker = DatePickerDialog(
             requireContext(),
             { _, selectedYear, selectedMonth, selectedDay ->
-                val formattedDate = "${selectedMonth}/${selectedDay}/${selectedYear}"
+                val formattedDate = "${selectedMonth+1}/${selectedDay}/${selectedYear}"
                 binding.reminderDate.text = formattedDate
             },
             year,
@@ -434,6 +444,8 @@ class GoalsFragment : Fragment() {
     //[*]CALCULATION FUNCTIONS[*]//
     ///////////////////////////////
 
+
+    //[REQUIRES NON-STATIC INTAKE FROM MEALS WHEN FUNCTIONAL]
     //Calculate percentage to goal for Calorie Bar
     private fun calcCaloriePercent(c: Int, g: Int ){
         val current: Int = c
@@ -452,6 +464,7 @@ class GoalsFragment : Fragment() {
         }
     }
 
+    //[ACCRUED WEEKLY VALUE TO AS C:]
     //Calculate percentage to goal for Workout Bar
     private fun calcWorkoutPercent(c: Int, g: Int ){
         val current: Int = c
@@ -490,7 +503,8 @@ class GoalsFragment : Fragment() {
         }
     }
 
-    //For creation of the "work out" chart at the bottom of the fragment
+    //[USE THIS METHOD TO INSERT AND UPDATE VALUES IN THE CHART]
+    //Creates the chart [WIP]
     private fun createChart(){
         binding.goalChart.axisRight.setDrawLabels(false)
 
