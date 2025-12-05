@@ -21,6 +21,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.nutrifit.CalorieGoalEntity
 import com.example.nutrifit.ReminderReceiver
 import com.example.nutrifit.WorkoutEntity
+import com.example.nutrifit.WorkoutGoalEntity
 import com.example.nutrifit.databinding.FragmentGoalsBinding
 import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
@@ -146,15 +147,138 @@ class GoalsFragment : Fragment() {
     ///////////////////////////////////
 
     //Update goal dialog function
+    private fun workoutGoalInputDialog(){
+        val editText = EditText(requireContext()).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER
+            hint = "Enter workout goal"
+        }
 
+        AlertDialog.Builder(requireContext())
+            .setTitle("Input your workout goal!")
+            .setView(editText)
+            .setPositiveButton("Save") {dialog, _ ->
+
+                val input = editText.text.toString().trim()
+
+                //Input validation
+                //Empty
+                if (input.isEmpty()) {
+                    Toast.makeText(requireContext(), "Please enter a number.", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                //Exceeds value
+                val inpValue = input.toInt()
+                if (inpValue > 840) {
+                    Toast.makeText(requireContext(), "Goal cannot exceed 840 minutes", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+
+                //Update goal textview
+                binding.tvWorkoutGoal.text = "Your current workout goal this week is: $inpValue minutes"
+
+                dialog.dismiss()
+                calcWorkoutPercent(0, inpValue)
+                val goal = WorkoutGoalEntity(
+                    goal = inpValue
+                )
+
+                setWorkoutGoal(goal)
+            }
+            .setNegativeButton("Cancel") {dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+    }
 
     //Adds workout goal to DB
+    fun setWorkoutGoal(workoutGoal: WorkoutGoalEntity){
+        val user = auth.currentUser ?: return
+
+        val data = hashMapOf(
+            "workoutGoal" to workoutGoal.goal,
+        )
+
+        db.collection("users")
+            .document(user.uid)
+            .collection("Goal")
+            .document("workoutGoal")
+            .set(data)
+    }
 
     //Retrieves list of workouts
-    fun getWorkoutList(){
+    fun getWorkoutGoal(){
+        val user = auth.currentUser
+        if (user == null) {
+            goToLogin()
+            return
+        }
+
+        val uid = user.uid
+
+        db.collection("users")
+            .document(uid)
+            .collection("Goal")
+            .document("workoutGoal")
+            .get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    println("Successfully retrieved DB collection")
+                    val Goal: Int = doc.getLong("workoutGoal")?.toInt() ?: 0
+
+                    println("retrieved stored value: $Goal")
+
+                    //Update goal textview
+                    binding.tvGoalsData.text = if (Goal > 0) "Daily Calorie goal: $Goal" else "No workouts logged this week."
+                    weeklyWorkoutTotal()
+                    calcWorkoutPercent(1, Goal)
+                }
+
+                else {
+                    println("Document does not exist")
+                }
+            }
+    }
+
+    //Calculates the total workout time for the day
+    fun dailyWorkoutTotal(callback: (Int) -> Unit) {
+        val user = auth.currentUser
+        if (user == null) {
+            goToLogin()
+            return
+        }
+
+        val uid = user.uid
+
+        db.collection("users")
+            .document(uid)
+            .collection("workouts")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                var totalDuration = 0
+
+                for (entryDoc in snapshot.documents) {
+                    db.collection("users")
+                    db.document(uid)
+                    db.collection("workouts")
+                        .get()
+                        .addOnSuccessListener { workoutsSnapshot ->
+                            for (workoutDoc in workoutsSnapshot.documents) {
+                                val duration = workoutDoc.getLong("durationMinutes")?.toInt() ?: 0
+                                totalDuration += duration
+                            }
+                            //Call the callback after processing this entry
+                            callback(totalDuration)
+                        }
+
+                }
+            }
 
     }
 
+    //Calculates the total workout time for the week
+    fun weeklyWorkoutTotal(){
+
+    }
 
     ///////////////////////////////////
     //[*]CALORIE RELATED FUNCTIONS[*]//
@@ -162,7 +286,6 @@ class GoalsFragment : Fragment() {
 
     //Update goal dialog function
     private fun calorieGoalInputDialog(){
-
         val editText = EditText(requireContext()).apply {
             inputType = InputType.TYPE_CLASS_NUMBER
             hint = "Enter calorie goal"
@@ -192,7 +315,10 @@ class GoalsFragment : Fragment() {
                 binding.tvGoalsData.text = "Daily Calorie goal: $inpValue"
 
                 dialog.dismiss()
-                calcCaloriePercent(1200, inpValue)
+
+                val calorieTemp: Int = 350 + 600 + 950
+
+                calcCaloriePercent(calorieTemp, inpValue)
                 val goal = CalorieGoalEntity(
                     goal = inpValue
                 )
@@ -240,11 +366,12 @@ class GoalsFragment : Fragment() {
                 if (doc.exists()) {
                     println("Successfully retrieved DB collection")
                     val calorieGoal: Int = doc.getLong("caloricGoal")?.toInt() ?: 0
+                    val calorieTemp: Int = 350 + 600 + 950
                     println("retrieved stored value: $calorieGoal")
 
                     //Update goal textview
                     binding.tvGoalsData.text = if (calorieGoal > 0) "Daily Calorie goal: $calorieGoal" else "Set a goal to start \ntracking your progress."
-                    calcCaloriePercent(1200, calorieGoal)
+                    calcCaloriePercent(calorieTemp, calorieGoal)
                 }
 
                 else {

@@ -140,7 +140,7 @@
                     app:layout_constraintTop_toBottomOf="@+id/goalChart" />
 
                 <TextView
-                    android:id="@+id/textView"
+                    android:id="@+id/tvWorkoutGoal"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:text="No workouts logged this week."
@@ -153,9 +153,9 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:text="Set workout goal"
-                    app:layout_constraintEnd_toEndOf="@+id/textView"
-                    app:layout_constraintStart_toStartOf="@+id/textView"
-                    app:layout_constraintTop_toBottomOf="@+id/textView" />
+                    app:layout_constraintEnd_toEndOf="@+id/tvWorkoutGoal"
+                    app:layout_constraintStart_toStartOf="@+id/tvWorkoutGoal"
+                    app:layout_constraintTop_toBottomOf="@+id/tvWorkoutGoal" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
         </LinearLayout>
