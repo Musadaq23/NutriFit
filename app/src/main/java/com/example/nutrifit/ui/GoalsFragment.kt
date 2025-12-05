@@ -124,6 +124,16 @@ class GoalsFragment : Fragment() {
     //[*]REMINDER RELATED FUNCTIONS[*]//
     ////////////////////////////////////
 
+    // DEMO: fires once in N seconds (easy for presentation)
+    private fun scheduleInSeconds(seconds: Int, title: String, text: String) {
+        val triggerAt = System.currentTimeMillis() + seconds * 1000L
+        alarmMgr().setExactAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            triggerAt,
+            pendingIntent(title, text)
+        )
+    }
+
     //Alarm manager
     private fun alarmMgr(): AlarmManager =
         requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
