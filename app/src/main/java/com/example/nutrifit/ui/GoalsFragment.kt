@@ -15,12 +15,9 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
 import com.example.nutrifit.CalorieGoalEntity
 import com.example.nutrifit.ReminderReceiver
-import com.example.nutrifit.WorkoutEntity
 import com.example.nutrifit.WorkoutGoalEntity
 import com.example.nutrifit.databinding.FragmentGoalsBinding
 import com.github.mikephil.charting.data.BarData
@@ -51,6 +48,7 @@ class GoalsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         getCalorieGoal()
+        getWorkoutGoal()
 
         createChart()
 
@@ -80,6 +78,12 @@ class GoalsFragment : Fragment() {
             cancelReminders()
             Toast.makeText(requireContext(), "Reminders canceled", Toast.LENGTH_SHORT).show()
         }
+
+        //On click listener for Workout goal button
+        binding.btnWorkoutGoal.setOnClickListener{
+            workoutGoalInputDialog()
+        }
+
     }
 
     private fun pendingIntent(title: String, text: String): PendingIntent {
@@ -177,7 +181,7 @@ class GoalsFragment : Fragment() {
                 binding.tvWorkoutGoal.text = "Your current workout goal this week is: $inpValue minutes"
 
                 dialog.dismiss()
-                calcWorkoutPercent(0, inpValue)
+                calcWorkoutPercent(50, inpValue)
                 val goal = WorkoutGoalEntity(
                     goal = inpValue
                 )
@@ -224,11 +228,10 @@ class GoalsFragment : Fragment() {
                 if (doc.exists()) {
                     println("Successfully retrieved DB collection")
                     val Goal: Int = doc.getLong("workoutGoal")?.toInt() ?: 0
-
                     println("retrieved stored value: $Goal")
 
                     //Update goal textview
-                    binding.tvGoalsData.text = if (Goal > 0) "Daily Calorie goal: $Goal" else "No workouts logged this week."
+                    binding.tvWorkoutGoal.text = if (Goal > 0) "Weekly workout goal: $Goal" else "No workouts logged this week."
                     weeklyWorkoutTotal()
                     calcWorkoutPercent(1, Goal)
                 }
@@ -395,7 +398,7 @@ class GoalsFragment : Fragment() {
         val datePicker = DatePickerDialog(
             requireContext(),
             { _, selectedYear, selectedMonth, selectedDay ->
-                val formattedDate = "${selectedMonth}/${selectedDay}/${selectedYear}"
+                val formattedDate = "${selectedMonth+1}/${selectedDay}/${selectedYear}"
                 binding.reminderDate.text = formattedDate
             },
             year,
