@@ -27,6 +27,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.util.Calendar
 
 class GoalsFragment : Fragment() {
@@ -49,6 +50,11 @@ class GoalsFragment : Fragment() {
 
         getCalorieGoal()
         getWorkoutGoal()
+
+
+        dailyWorkoutTotal {
+            totalDuration -> println("Total duration = $totalDuration")
+        }
 
         createChart()
 
@@ -243,13 +249,8 @@ class GoalsFragment : Fragment() {
     }
 
     //Calculates the total workout time for the day
-    fun dailyWorkoutTotal(callback: (Int) -> Unit) {
-        val user = auth.currentUser
-        if (user == null) {
-            goToLogin()
-            return
-        }
-
+    fun dailyWorkoutTotal(callback: (Int)-> Unit) {
+        val user = auth.currentUser ?: return callback(0)
         val uid = user.uid
 
         db.collection("users")
@@ -257,25 +258,14 @@ class GoalsFragment : Fragment() {
             .collection("workouts")
             .get()
             .addOnSuccessListener { snapshot ->
-                var totalDuration = 0
-
-                for (entryDoc in snapshot.documents) {
-                    db.collection("users")
-                    db.document(uid)
-                    db.collection("workouts")
-                        .get()
-                        .addOnSuccessListener { workoutsSnapshot ->
-                            for (workoutDoc in workoutsSnapshot.documents) {
-                                val duration = workoutDoc.getLong("durationMinutes")?.toInt() ?: 0
-                                totalDuration += duration
-                            }
-                            //Call the callback after processing this entry
-                            callback(totalDuration)
-                        }
-
+                val totalDuration = snapshot.documents.sumOf { doc ->
+                    doc.getLong("durationMinutes")?.toInt() ?: 0
                 }
+                callback(totalDuration)
             }
-
+            .addOnFailureListener {
+                callback(0)
+            }
     }
 
     //Calculates the total workout time for the week
