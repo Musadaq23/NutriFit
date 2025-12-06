@@ -16,6 +16,7 @@ import com.example.nutrifit.WorkoutEntity
 import com.example.nutrifit.databinding.FragmentWorkoutsBinding
 import com.example.nutrifit.databinding.ItemWorkoutRowBinding
 import java.time.LocalDate
+import java.util.Locale
 
 class WorkoutsFragment : Fragment() {
 
@@ -43,7 +44,7 @@ class WorkoutsFragment : Fragment() {
         adapter = WorkoutAdapter(
             items,
             onItemClick = { workout -> showEditWorkoutDialog(workout) },
-            onItemLongClick = { workout -> confirmDeleteWorkout(workout) }
+            onDeleteClick = { workout -> confirmDeleteWorkout(workout) }
         )
 
         binding.rvWorkouts.layoutManager = LinearLayoutManager(requireContext())
@@ -66,15 +67,30 @@ class WorkoutsFragment : Fragment() {
     private fun showAddWorkoutDialog() {
         val context = requireContext()
 
-        val etType = EditText(context).apply {
-            hint = "Workout type (Ex. Full Body)"
+        val etExercise = EditText(context).apply {
+            hint = "Exercise (e.g. Bench Press)"
+        }
+        val etMuscleGroup = EditText(context).apply {
+            hint = "Muscle group (e.g. Chest)"
+        }
+        val etSets = EditText(context).apply {
+            hint = "Sets (e.g. 4)"
+            inputType = InputType.TYPE_CLASS_NUMBER
+        }
+        val etReps = EditText(context).apply {
+            hint = "Reps per set (e.g. 8)"
+            inputType = InputType.TYPE_CLASS_NUMBER
+        }
+        val etWeight = EditText(context).apply {
+            hint = "Weight per rep (e.g. 135)"
+            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
         }
         val etDuration = EditText(context).apply {
-            hint = "Duration (Minutes)"
+            hint = "Duration (minutes)"
             inputType = InputType.TYPE_CLASS_NUMBER
         }
         val etIntensity = EditText(context).apply {
-            hint = "Intensity (optional, Ex. High)"
+            hint = "Intensity (Low / Medium / High)"
         }
         val etCalories = EditText(context).apply {
             hint = "Calories burned (optional)"
@@ -88,7 +104,11 @@ class WorkoutsFragment : Fragment() {
         val layout = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(50, 20, 50, 10)
-            addView(etType)
+            addView(etExercise)
+            addView(etMuscleGroup)
+            addView(etSets)
+            addView(etReps)
+            addView(etWeight)
             addView(etDuration)
             addView(etIntensity)
             addView(etCalories)
@@ -96,15 +116,25 @@ class WorkoutsFragment : Fragment() {
         }
 
         AlertDialog.Builder(context)
-            .setTitle("Add Workout")
+            .setTitle("Log Exercise")
             .setView(layout)
             .setPositiveButton("Save") { _, _ ->
-                val type = etType.text.toString().trim()
-                val durationText = etDuration.text.toString().trim()
+                val exerciseName = etExercise.text.toString().trim()
+                val muscleGroup = etMuscleGroup.text.toString().trim()
+                val sets = etSets.text.toString().trim().toIntOrNull() ?: 0
+                val reps = etReps.text.toString().trim().toIntOrNull() ?: 0
+                val weight = etWeight.text.toString().trim().toFloatOrNull() ?: 0f
+                val duration = etDuration.text.toString().trim().toIntOrNull() ?: 0
 
-                if (type.isEmpty() || durationText.isEmpty()) return@setPositiveButton
+                if (exerciseName.isEmpty() || sets <= 0 || reps <= 0 || weight <= 0f) {
+                    android.widget.Toast.makeText(
+                        context,
+                        "Please enter exercise, sets, reps, and a weight.",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                    return@setPositiveButton
+                }
 
-                val duration = durationText.toIntOrNull() ?: return@setPositiveButton
                 val intensity = etIntensity.text.toString().trim().ifBlank { null }
                 val calories = etCalories.text.toString().trim().toIntOrNull()
                 val notes = etNotes.text.toString().trim().ifBlank { null }
@@ -113,7 +143,11 @@ class WorkoutsFragment : Fragment() {
                 val workout = WorkoutEntity(
                     id = "",
                     date = date,
-                    type = type,
+                    exerciseName = exerciseName,
+                    muscleGroup = muscleGroup,
+                    sets = sets,
+                    repsPerSet = reps,
+                    weightPerRep = weight,
                     durationMinutes = duration,
                     intensity = intensity,
                     notes = notes,
@@ -129,12 +163,33 @@ class WorkoutsFragment : Fragment() {
     private fun showEditWorkoutDialog(workout: WorkoutEntity) {
         val context = requireContext()
 
-        val etType = EditText(context).apply {
-            hint = "Workout type"
-            setText(workout.type)
+        val etExercise = EditText(context).apply {
+            hint = "Exercise"
+            setText(workout.exerciseName)
+        }
+        val etMuscleGroup = EditText(context).apply {
+            hint = "Muscle group"
+            setText(workout.muscleGroup)
+        }
+        val etSets = EditText(context).apply {
+            hint = "Sets"
+            inputType = InputType.TYPE_CLASS_NUMBER
+            setText(workout.sets.toString())
+        }
+        val etReps = EditText(context).apply {
+            hint = "Reps per set"
+            inputType = InputType.TYPE_CLASS_NUMBER
+            setText(workout.repsPerSet.toString())
+        }
+        val etWeight = EditText(context).apply {
+            hint = "Weight per rep"
+            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+            setText(
+                if (workout.weightPerRep == 0f) "" else workout.weightPerRep.toString()
+            )
         }
         val etDuration = EditText(context).apply {
-            hint = "Duration"
+            hint = "Duration (minutes)"
             inputType = InputType.TYPE_CLASS_NUMBER
             setText(workout.durationMinutes.toString())
         }
@@ -156,7 +211,11 @@ class WorkoutsFragment : Fragment() {
         val layout = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(50, 20, 50, 10)
-            addView(etType)
+            addView(etExercise)
+            addView(etMuscleGroup)
+            addView(etSets)
+            addView(etReps)
+            addView(etWeight)
             addView(etDuration)
             addView(etIntensity)
             addView(etCalories)
@@ -164,21 +223,35 @@ class WorkoutsFragment : Fragment() {
         }
 
         AlertDialog.Builder(context)
-            .setTitle("Edit")
+            .setTitle("Edit Exercise")
             .setView(layout)
             .setPositiveButton("Save") { _, _ ->
-                val type = etType.text.toString().trim()
-                val durationText = etDuration.text.toString().trim()
+                val exerciseName = etExercise.text.toString().trim()
+                val muscleGroup = etMuscleGroup.text.toString().trim()
+                val sets = etSets.text.toString().trim().toIntOrNull() ?: 0
+                val reps = etReps.text.toString().trim().toIntOrNull() ?: 0
+                val weight = etWeight.text.toString().trim().toFloatOrNull() ?: 0f
+                val duration = etDuration.text.toString().trim().toIntOrNull() ?: 0
 
-                if (type.isEmpty() || durationText.isEmpty()) return@setPositiveButton
+                if (exerciseName.isEmpty() || sets <= 0 || reps <= 0 || weight <= 0f) {
+                    android.widget.Toast.makeText(
+                        context,
+                        "Please enter exercise, sets, reps, and a weight.",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                    return@setPositiveButton
+                }
 
-                val duration = durationText.toIntOrNull() ?: return@setPositiveButton
                 val intensity = etIntensity.text.toString().trim().ifBlank { null }
                 val calories = etCalories.text.toString().trim().toIntOrNull()
                 val notes = etNotes.text.toString().trim().ifBlank { null }
 
                 val updated = workout.copy(
-                    type = type,
+                    exerciseName = exerciseName,
+                    muscleGroup = muscleGroup,
+                    sets = sets,
+                    repsPerSet = reps,
+                    weightPerRep = weight,
                     durationMinutes = duration,
                     intensity = intensity,
                     caloriesBurned = calories,
@@ -194,7 +267,7 @@ class WorkoutsFragment : Fragment() {
     private fun confirmDeleteWorkout(workout: WorkoutEntity) {
         AlertDialog.Builder(requireContext())
             .setTitle("Delete")
-            .setMessage("Are you sure?")
+            .setMessage("Are you sure you want to delete this workout?")
             .setPositiveButton("Delete") { _, _ ->
                 viewModel.deleteWorkout(workout)
             }
@@ -220,7 +293,7 @@ class WorkoutsFragment : Fragment() {
     class WorkoutAdapter(
         private val items: List<WorkoutEntity>,
         private val onItemClick: (WorkoutEntity) -> Unit,
-        private val onItemLongClick: (WorkoutEntity) -> Unit
+        private val onDeleteClick: (WorkoutEntity) -> Unit
     ) : RecyclerView.Adapter<WorkoutAdapter.WorkoutViewHolder>() {
 
         class WorkoutViewHolder(val rowBinding: ItemWorkoutRowBinding) :
@@ -234,16 +307,68 @@ class WorkoutsFragment : Fragment() {
 
         override fun onBindViewHolder(holder: WorkoutViewHolder, position: Int) {
             val item = items[position]
-            holder.rowBinding.tvWorkoutTitle.text =
-                "${item.type} – ${item.durationMinutes} min"
-            holder.rowBinding.tvWorkoutSubtitle.text = item.date
+
+            val weightText =
+                if (item.weightPerRep % 1f == 0f)
+                    String.format(Locale.US, "%d lb", item.weightPerRep.toInt())
+                else
+                    String.format(Locale.US, "%.1f lb", item.weightPerRep)
+
+            val titleBuilder = StringBuilder().apply {
+                append(item.exerciseName)
+                if (item.sets > 0 && item.repsPerSet > 0) {
+                    append(" – ")
+                    append(item.sets)
+                    append(" x ")
+                    append(item.repsPerSet)
+                    if (item.weightPerRep > 0f) {
+                        append(" @ ")
+                        append(weightText)
+                    }
+                }
+            }
+
+            val subtitleBuilder = StringBuilder().apply {
+                append(item.date)
+
+                if (item.muscleGroup.isNotBlank()) {
+                    append(" • ")
+                    append(item.muscleGroup)
+                }
+
+                if (item.durationMinutes > 0) {
+                    append(" • ")
+                    append(item.durationMinutes)
+                    append(" min")
+                }
+
+                if (!item.intensity.isNullOrBlank()) {
+                    append(" • ")
+                    append(item.intensity)
+                }
+
+                if (item.caloriesBurned != null && item.caloriesBurned > 0) {
+                    append(" • ")
+                    append(item.caloriesBurned)
+                    append(" kcal")
+                }
+
+                if (!item.notes.isNullOrBlank()) {
+                    append(" • ")
+                    append(item.notes)
+                }
+            }
+
+
+            holder.rowBinding.tvWorkoutTitle.text = titleBuilder.toString()
+            holder.rowBinding.tvWorkoutSubtitle.text = subtitleBuilder.toString()
 
             holder.rowBinding.root.setOnClickListener {
                 onItemClick(item)
             }
-            holder.rowBinding.root.setOnLongClickListener {
-                onItemLongClick(item)
-                true
+
+            holder.rowBinding.btnDeleteWorkout.setOnClickListener {
+                onDeleteClick(item)
             }
         }
 
