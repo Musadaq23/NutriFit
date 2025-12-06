@@ -40,7 +40,12 @@ class WorkoutsFragment : Fragment() {
 
         binding.tvWorkoutsTitle.text = "Workouts"
 
-        adapter = WorkoutAdapter(items)
+        adapter = WorkoutAdapter(
+            items,
+            onItemClick = { workout -> showEditWorkoutDialog(workout) },
+            onItemLongClick = { workout -> confirmDeleteWorkout(workout) }
+        )
+
         binding.rvWorkouts.layoutManager = LinearLayoutManager(requireContext())
         binding.rvWorkouts.adapter = adapter
 
@@ -62,11 +67,22 @@ class WorkoutsFragment : Fragment() {
         val context = requireContext()
 
         val etType = EditText(context).apply {
-            hint = "Workout type (e.g., Upper Body)"
+            hint = "Workout type (Ex. Full Body)"
         }
         val etDuration = EditText(context).apply {
-            hint = "Duration (minutes)"
+            hint = "Duration (Minutes)"
             inputType = InputType.TYPE_CLASS_NUMBER
+        }
+        val etIntensity = EditText(context).apply {
+            hint = "Intensity (optional, Ex. High)"
+        }
+        val etCalories = EditText(context).apply {
+            hint = "Calories burned (optional)"
+            inputType = InputType.TYPE_CLASS_NUMBER
+        }
+        val etNotes = EditText(context).apply {
+            hint = "Notes (optional)"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
         }
 
         val layout = LinearLayout(context).apply {
@@ -74,6 +90,9 @@ class WorkoutsFragment : Fragment() {
             setPadding(50, 20, 50, 10)
             addView(etType)
             addView(etDuration)
+            addView(etIntensity)
+            addView(etCalories)
+            addView(etNotes)
         }
 
         AlertDialog.Builder(context)
@@ -86,16 +105,98 @@ class WorkoutsFragment : Fragment() {
                 if (type.isEmpty() || durationText.isEmpty()) return@setPositiveButton
 
                 val duration = durationText.toIntOrNull() ?: return@setPositiveButton
+                val intensity = etIntensity.text.toString().trim().ifBlank { null }
+                val calories = etCalories.text.toString().trim().toIntOrNull()
+                val notes = etNotes.text.toString().trim().ifBlank { null }
                 val date = LocalDate.now().toString()
 
                 val workout = WorkoutEntity(
-                    id = 0L,
+                    id = "",
                     date = date,
                     type = type,
-                    durationMinutes = duration
+                    durationMinutes = duration,
+                    intensity = intensity,
+                    notes = notes,
+                    caloriesBurned = calories
                 )
 
                 viewModel.addWorkout(workout)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showEditWorkoutDialog(workout: WorkoutEntity) {
+        val context = requireContext()
+
+        val etType = EditText(context).apply {
+            hint = "Workout type"
+            setText(workout.type)
+        }
+        val etDuration = EditText(context).apply {
+            hint = "Duration"
+            inputType = InputType.TYPE_CLASS_NUMBER
+            setText(workout.durationMinutes.toString())
+        }
+        val etIntensity = EditText(context).apply {
+            hint = "Intensity"
+            setText(workout.intensity ?: "")
+        }
+        val etCalories = EditText(context).apply {
+            hint = "Calories burned"
+            inputType = InputType.TYPE_CLASS_NUMBER
+            setText(workout.caloriesBurned?.toString() ?: "")
+        }
+        val etNotes = EditText(context).apply {
+            hint = "Notes"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            setText(workout.notes ?: "")
+        }
+
+        val layout = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(50, 20, 50, 10)
+            addView(etType)
+            addView(etDuration)
+            addView(etIntensity)
+            addView(etCalories)
+            addView(etNotes)
+        }
+
+        AlertDialog.Builder(context)
+            .setTitle("Edit")
+            .setView(layout)
+            .setPositiveButton("Save") { _, _ ->
+                val type = etType.text.toString().trim()
+                val durationText = etDuration.text.toString().trim()
+
+                if (type.isEmpty() || durationText.isEmpty()) return@setPositiveButton
+
+                val duration = durationText.toIntOrNull() ?: return@setPositiveButton
+                val intensity = etIntensity.text.toString().trim().ifBlank { null }
+                val calories = etCalories.text.toString().trim().toIntOrNull()
+                val notes = etNotes.text.toString().trim().ifBlank { null }
+
+                val updated = workout.copy(
+                    type = type,
+                    durationMinutes = duration,
+                    intensity = intensity,
+                    caloriesBurned = calories,
+                    notes = notes
+                )
+
+                viewModel.updateWorkout(updated)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun confirmDeleteWorkout(workout: WorkoutEntity) {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Delete")
+            .setMessage("Are you sure?")
+            .setPositiveButton("Delete") { _, _ ->
+                viewModel.deleteWorkout(workout)
             }
             .setNegativeButton("Cancel", null)
             .show()
@@ -117,7 +218,9 @@ class WorkoutsFragment : Fragment() {
     }
 
     class WorkoutAdapter(
-        private val items: List<WorkoutEntity>
+        private val items: List<WorkoutEntity>,
+        private val onItemClick: (WorkoutEntity) -> Unit,
+        private val onItemLongClick: (WorkoutEntity) -> Unit
     ) : RecyclerView.Adapter<WorkoutAdapter.WorkoutViewHolder>() {
 
         class WorkoutViewHolder(val rowBinding: ItemWorkoutRowBinding) :
@@ -134,6 +237,14 @@ class WorkoutsFragment : Fragment() {
             holder.rowBinding.tvWorkoutTitle.text =
                 "${item.type} – ${item.durationMinutes} min"
             holder.rowBinding.tvWorkoutSubtitle.text = item.date
+
+            holder.rowBinding.root.setOnClickListener {
+                onItemClick(item)
+            }
+            holder.rowBinding.root.setOnLongClickListener {
+                onItemLongClick(item)
+                true
+            }
         }
 
         override fun getItemCount(): Int = items.size
