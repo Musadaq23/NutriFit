@@ -1,5 +1,18 @@
-<resources>
-    <style name="Theme.Nutrifit" parent="Theme.AppCompat.Light.NoActionBar">
-        <!-- your colors if you want -->
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <style name="Theme.Nutrifit" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/md_primary</item>
+        <item name="colorPrimaryContainer">@color/md_primary_container</item>
+        <item name="colorSecondary">@color/md_secondary</item>
+        <item name="colorSecondaryContainer">@color/md_secondary_container</item>
+
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+
+        <item name="shapeAppearanceSmallComponent">@style/Shape.Small</item>
+        <item name="shapeAppearanceMediumComponent">@style/Shape.Medium</item>
+        <item name="shapeAppearanceLargeComponent">@style/Shape.Large</item>
+
     </style>
+
 </resources>

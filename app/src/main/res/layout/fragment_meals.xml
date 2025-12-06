@@ -6,51 +6,54 @@
     android:layout_height="match_parent"
     android:padding="16dp">
 
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAddMeal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="Add meal"
+        app:srcCompat="@android:drawable/ic_input_add"
+        android:layout_margin="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/topAppBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:title="Meals"
+        style="@style/Widget.Material3.Toolbar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <TextView
         android:id="@+id/tvMealsTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Meals"
-        android:textSize="24sp"
+        android:textSize="20sp"
         android:textStyle="bold"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <Spinner
-        android:id="@+id/spinnerMealFilter"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        app:layout_constraintStart_toEndOf="@id/tvMealsTitle"
-        app:layout_constraintTop_toTopOf="@id/tvMealsTitle" />
+        app:layout_constraintTop_toBottomOf="@id/topAppBar"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="16dp" />
 
     <TextView
-        android:id="@+id/tvEmptyMeals"
+        android:id="@+id/tvMealsData"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Meals are not present. Add one."
-        android:textColor="#777777"
-        android:layout_marginTop="16dp"
+        android:text="No meals yet."
+        android:layout_marginTop="12dp"
         app:layout_constraintTop_toBottomOf="@id/tvMealsTitle"
         app:layout_constraintStart_toStartOf="parent" />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvMeals"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/spinnerMealFilter"
-        app:layout_constraintBottom_toTopOf="@+id/btnAddMeal"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
 
     <Button
         android:id="@+id/btnAddMeal"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Add Meal."
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_margin="16dp"/>
+        android:text="Add meal"
+        android:layout_marginTop="12dp"
+        app:layout_constraintTop_toBottomOf="@id/tvMealsData"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+
