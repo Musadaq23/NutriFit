@@ -5,9 +5,13 @@ import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.app.PendingIntent
 import android.app.TimePickerDialog
+import com.github.mikephil.charting.components.Description
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
@@ -40,9 +44,9 @@ class GoalsFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentGoalsBinding.inflate(inflater, container, false)
-            auth = FirebaseAuth.getInstance()
-            db = FirebaseFirestore.getInstance()
-            return binding.root
+        auth = FirebaseAuth.getInstance()
+        db = FirebaseFirestore.getInstance()
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?){
@@ -51,12 +55,17 @@ class GoalsFragment : Fragment() {
         getCalorieGoal()
         getWorkoutGoal()
 
-
         dailyWorkoutTotal {
-            totalDuration -> println("Total duration = $totalDuration")
+                totalDuration -> println("Total duration = $totalDuration")
         }
 
         createChart()
+
+        val desc = Description().apply {
+            text = "Minutes worked out this week"
+            textSize = 12f    // optional
+        }
+        binding.goalChart.description = desc
 
         //On click listener for time
         binding.reminderTime.setOnClickListener{
@@ -75,8 +84,32 @@ class GoalsFragment : Fragment() {
 
         //On click listener for reminder button.
         binding.btnDailyReminder.setOnClickListener {
-            scheduleDaily(20, 0, "Evening check-in", "Log today’s meals and workouts.")
-            Toast.makeText(requireContext(), "Daily reminder set for 8:00 PM", Toast.LENGTH_SHORT).show()
+
+            // Before using exact alarms, make sure we’re allowed on Android 12+
+            if (hasExactAlarmPermission()) {
+                // DEMO: fire once in 10 seconds from now
+                scheduleInSeconds(
+                    seconds = 10,
+                    title = "NutriFit Check-in",
+                    text = "Don’t forget to log today’s meals and workouts!"
+                )
+
+                // Daily exact reminder at 8:00 PM
+                scheduleDaily(
+                    hour = 20,
+                    minute = 0,
+                    title = "Evening check-in",
+                    text = "Review today’s meals and workouts."
+                )
+
+                Toast.makeText(
+                    requireContext(),
+                    "10-second demo reminder + daily reminder set for 8:00 PM",
+                    Toast.LENGTH_LONG
+                ).show()
+            } else {
+                requestExactAlarmPermission()
+            }
         }
 
         //On click listener for reminder cancel button
@@ -123,6 +156,29 @@ class GoalsFragment : Fragment() {
     ////////////////////////////////////
     //[*]REMINDER RELATED FUNCTIONS[*]//
     ////////////////////////////////////
+
+    // check if we’re allowed to schedule exact alarms (Android 12+)
+    private fun hasExactAlarmPermission(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
+
+        val alarmManager = requireContext().getSystemService(AlarmManager::class.java)
+        return alarmManager?.canScheduleExactAlarms() == true
+    }
+
+    // open system settings to request exact-alarm permission
+    private fun requestExactAlarmPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                data = Uri.parse("package:${requireContext().packageName}")
+            }
+            startActivity(intent)
+            Toast.makeText(
+                requireContext(),
+                "Enable exact alarms for NutriFit, then tap the button again.",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
 
     // DEMO: fires once in N seconds (easy for presentation)
     private fun scheduleInSeconds(seconds: Int, title: String, text: String) {
@@ -459,7 +515,7 @@ class GoalsFragment : Fragment() {
         val current: Int = c
         val goal: Int = g
 
-        //No dividing by zero dumbass.
+        //No dividing by zero.
         val percent: Int = if(goal == 0) {
             100
         } else {
@@ -479,8 +535,8 @@ class GoalsFragment : Fragment() {
     //Updates calorie progress bar
     private suspend fun calorieProgressBar(progress: Int){
         for (i in 1..progress){
-                binding.calorieProgressBar.setProgress(i, true)
-                delay(35)
+            binding.calorieProgressBar.setProgress(i, true)
+            delay(35)
         }
     }
 
@@ -511,7 +567,7 @@ class GoalsFragment : Fragment() {
         val dataSet: BarDataSet = BarDataSet(goalEntries, "Minutes worked out")
         val barData: BarData = BarData(dataSet)
 
-        binding.goalChart.setData(barData)
+        binding.goalChart.data = barData
     }
 }
 

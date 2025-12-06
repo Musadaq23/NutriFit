@@ -1,163 +1,156 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/topAppBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:title="Goals"
+        style="@style/Widget.Material3.Toolbar"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:id="@+id/goalsScroll"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        android:clipToPadding="false"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="80dp"
+        app:layout_constraintTop_toBottomOf="@id/topAppBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <androidx.constraintlayout.widget.ConstraintLayout
+            <TextView
+                android:id="@+id/tvGoalsTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Goals"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:layout_marginTop="16dp" />
+
+            <ProgressBar
+                android:id="@+id/calorieProgressBar"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                android:layout_width="245dp"
+                android:layout_height="225dp"
+                android:layout_marginTop="24dp"
+                android:indeterminate="false"
+                android:max="100"
+                android:min="0"
+                android:layout_gravity="center_horizontal"
+                android:progressDrawable="@drawable/circle_progressbar" />
+
+            <TextView
+                android:id="@+id/tvGoalsData"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No goals yet"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="-120dp" />
+
+            <Button
+                android:id="@+id/btnEditGoal"
                 android:layout_width="match_parent"
-                android:layout_height="739dp"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:layout_height="49dp"
+                android:layout_marginTop="40dp"
+                android:text="Set Calorie Goal" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:orientation="horizontal">
 
                 <TextView
-                    android:id="@+id/tvGoalsTitle"
-                    android:layout_width="wrap_content"
+                    android:id="@+id/reminderTime"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="Goals"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-                <ProgressBar
-                    android:id="@+id/calorieProgressBar"
-                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                    android:layout_width="245dp"
-                    android:layout_height="225dp"
-                    android:layout_marginTop="36dp"
-                    android:indeterminate="false"
-                    android:max="100"
-                    android:min="0"
-                    android:progressDrawable="@drawable/circle_progressbar"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintHorizontal_bias="0.489"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    android:layout_weight="1"
+                    android:background="#F4F4F4"
+                    android:clickable="true"
+                    android:text="6:00AM"
+                    android:textAlignment="center"
+                    android:textSize="24sp" />
 
                 <TextView
-                    android:id="@+id/tvGoalsData"
-                    android:layout_width="wrap_content"
+                    android:id="@+id/reminderDate"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="No goals yet"
-                    app:layout_constraintBottom_toBottomOf="@+id/calorieProgressBar"
-                    app:layout_constraintEnd_toEndOf="@+id/calorieProgressBar"
-                    app:layout_constraintStart_toStartOf="@+id/calorieProgressBar"
-                    app:layout_constraintTop_toTopOf="@+id/calorieProgressBar" />
+                    android:layout_weight="1"
+                    android:background="#F4F4F4"
+                    android:clickable="true"
+                    android:text="MM/DD/YYYY"
+                    android:textAlignment="center"
+                    android:textSize="24sp" />
+            </LinearLayout>
 
-                <Button
-                    android:id="@+id/btnEditGoal"
-                    android:layout_width="327dp"
-                    android:layout_height="49dp"
-                    android:layout_marginTop="8dp"
-                    android:text="Set Calorie Goal"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/calorieProgressBar" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal"
+                android:gravity="center">
 
                 <Button
                     android:id="@+id/btnDailyReminder"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Set reminder"
-                    app:layout_constraintStart_toStartOf="@+id/reminderTime"
-                    app:layout_constraintTop_toBottomOf="@+id/reminderTime" />
+                    android:text="Set reminder" />
 
                 <Button
                     android:id="@+id/btnCancelReminder"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="48dp"
-                    android:text="Cancel Reminders"
-                    app:layout_constraintStart_toEndOf="@+id/btnDailyReminder"
-                    app:layout_constraintTop_toBottomOf="@+id/reminderDate" />
+                    android:layout_marginStart="24dp"
+                    android:text="Cancel Reminders" />
+            </LinearLayout>
 
-                <TextView
-                    android:id="@+id/reminderDate"
-                    android:layout_width="205dp"
-                    android:layout_height="0dp"
-                    android:autoText="false"
-                    android:background="#F4F4F4"
-                    android:clickable="true"
-                    android:editable="false"
-                    android:ems="10"
-                    android:inputType="date"
-                    android:text="MM/DD/YYYY"
-                    android:textAlignment="center"
-                    android:textSize="24sp"
-                    app:layout_constraintBottom_toBottomOf="@+id/reminderTime"
-                    app:layout_constraintStart_toEndOf="@+id/reminderTime"
-                    app:layout_constraintTop_toTopOf="@+id/reminderTime"
-                    app:layout_constraintVertical_bias="0.0" />
+            <com.github.mikephil.charting.charts.BarChart
+                android:id="@+id/goalChart"
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:layout_marginTop="16dp" />
 
-                <TextView
-                    android:id="@+id/reminderTime"
-                    android:layout_width="123dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="24dp"
-                    android:background="#F4F4F4"
-                    android:clickable="true"
-                    android:editable="false"
-                    android:ems="10"
-                    android:inputType="time"
-                    android:text="6:00AM"
-                    android:textAlignment="center"
-                    android:textSize="24sp"
-                    app:layout_constraintStart_toStartOf="@+id/btnEditGoal"
-                    app:layout_constraintTop_toBottomOf="@+id/btnEditGoal" />
+            <ProgressBar
+                android:id="@+id/workoutProgressBar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:indeterminate="false"
+                android:max="100" />
 
-                <com.github.mikephil.charting.charts.BarChart
-                    android:id="@+id/goalChart"
-                    android:layout_width="325dp"
-                    android:layout_height="180dp"
-                    android:layout_marginTop="16dp"
-                    app:layout_constraintEnd_toEndOf="@+id/btnCancelReminder"
-                    app:layout_constraintHorizontal_bias="0.48"
-                    app:layout_constraintStart_toStartOf="@+id/btnDailyReminder"
-                    app:layout_constraintTop_toBottomOf="@+id/btnDailyReminder"
-                    />
+            <TextView
+                android:id="@+id/tvWorkoutGoal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="No workouts logged this week." />
 
-                <ProgressBar
-                    android:id="@+id/workoutProgressBar"
-                    style="?android:attr/progressBarStyleHorizontal"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:indeterminate="false"
-                    android:max="100"
-                    app:layout_constraintEnd_toEndOf="@+id/goalChart"
-                    app:layout_constraintStart_toStartOf="@+id/goalChart"
-                    app:layout_constraintTop_toBottomOf="@+id/goalChart" />
+            <Button
+                android:id="@+id/btnWorkoutGoal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="16dp"
+                android:text="Set workout goal" />
 
-                <TextView
-                    android:id="@+id/tvWorkoutGoal"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="No workouts logged this week."
-                    app:layout_constraintEnd_toEndOf="@+id/workoutProgressBar"
-                    app:layout_constraintStart_toStartOf="@+id/workoutProgressBar"
-                    app:layout_constraintTop_toBottomOf="@+id/workoutProgressBar" />
-
-                <Button
-                    android:id="@+id/btnWorkoutGoal"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="Set workout goal"
-                    app:layout_constraintEnd_toEndOf="@+id/tvWorkoutGoal"
-                    app:layout_constraintStart_toStartOf="@+id/tvWorkoutGoal"
-                    app:layout_constraintTop_toBottomOf="@+id/tvWorkoutGoal" />
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
         </LinearLayout>
+
     </ScrollView>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

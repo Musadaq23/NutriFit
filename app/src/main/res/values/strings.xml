@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">Nutrifit</string>
+    <string name="add_workout">Add workout</string>
+    <string name="add_meal">Add meal</string>
+    <string name="open_profile">Open profile</string>
 </resources>

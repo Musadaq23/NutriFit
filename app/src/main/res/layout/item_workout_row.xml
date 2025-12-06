@@ -6,6 +6,16 @@
     android:layout_height="wrap_content"
     android:padding="12dp">
 
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/topAppBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:title="Workouts"
+        style="@style/Widget.Material3.Toolbar"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <TextView
         android:id="@+id/tvWorkoutTitle"
         android:layout_width="0dp"

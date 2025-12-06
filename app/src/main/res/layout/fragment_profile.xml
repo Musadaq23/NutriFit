@@ -5,6 +5,13 @@
     android:orientation="vertical"
     android:padding="16dp">
 
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/topAppBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:title="Help"
+        style="@style/Widget.Material3.Toolbar" />
+
     <TextView
         android:id="@+id/tvName"
         android:layout_width="wrap_content"
@@ -25,7 +32,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:hint="Display name" />
+        android:hint="Display name"
+        android:minHeight="8dp" />
 
     <EditText
         android:id="@+id/etAge"
