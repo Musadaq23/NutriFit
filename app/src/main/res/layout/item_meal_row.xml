@@ -10,23 +10,34 @@
         android:id="@+id/tvMealTitle"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Breakfast – 4000 calories"
-        android:textSize="16sp"
+        android:text="Meal"
         android:textStyle="bold"
-        app:layout_constraintTop_toTopOf="parent"
+        android:textSize="16sp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toStartOf="@id/btnDeleteMeal"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/tvMealSubtitle"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="2025-12-04 10:02"
-        android:textSize="14sp"
-        android:textColor="#777777"
-        app:layout_constraintTop_toBottomOf="@id/tvMealTitle"
+        android:text="Calories and macros"
+        android:textSize="13sp"
         app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btnDeleteMeal"
+        app:layout_constraintTop_toBottomOf="@id/tvMealTitle"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+    <ImageButton
+        android:id="@+id/btnDeleteMeal"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:contentDescription="Delete meal"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@android:drawable/ic_menu_delete"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="4dp"/>
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+

@@ -1,25 +1,28 @@
 package com.example.nutrifit.ui
 
+import android.app.AlertDialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
+import com.example.nutrifit.MealEntity
+import com.example.nutrifit.R
 import com.example.nutrifit.databinding.FragmentMealsBinding
-
-// model for a meal
-data class Meal(val name: String, val calories: Int)
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 class MealsFragment : Fragment() {
 
     private var _binding: FragmentMealsBinding? = null
     private val binding get() = _binding!!
 
-    // list of meals for this session
-    private val meals = mutableListOf<Meal>()
+    // Shared ViewModel so meals stay consistent across fragments/activities.
+    private val mealsViewModel: MealsViewModel by activityViewModels()
+
+    // Local cache of the most recent meals list, used by the picker and detail dialog.
+    private var currentMeals: List<MealEntity> = emptyList()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -27,11 +30,8 @@ class MealsFragment : Fragment() {
     ): View {
         _binding = FragmentMealsBinding.inflate(inflater, container, false)
 
+        // Title is set here so it always resets correctly when the fragment is recreated.
         binding.tvMealsTitle.text = "Meals"
-
-        meals.add(Meal("Breakfast", 350))
-        meals.add(Meal("Lunch", 600))
-        updateMealsText()
 
         return binding.root
     }
@@ -39,58 +39,118 @@ class MealsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.btnAddMeal.setOnClickListener {
-            showAddMealDialog()
+        // Observe Firestore-backed meals.
+        // This updates automatically when data changes (add/edit/delete).
+        mealsViewModel.meals.observe(viewLifecycleOwner) { list ->
+            currentMeals = list
+            updateMealsText(list)
         }
-        binding.fabAddMeal.setOnClickListener {
-            showAddMealDialog()
-        }
+
+        // Open Add/Edit screen for creating a new meal.
+        binding.btnAddMeal.setOnClickListener { openAddMeal() }
+        binding.fabAddMeal.setOnClickListener { openAddMeal() }
+
+        // Tapping the summary text opens the meal picker so the user can view details.
+        // This avoids changing your layout too much while still enabling "View Meal Details".
+        binding.tvMealsData.setOnClickListener { showMealPicker() }
     }
 
+    private fun openAddMeal() {
+        // Navigate to AddEditMealFragment with no existing meal (Add flow).
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.main_fragment_container, AddEditMealFragment.newInstance(null))
+            .addToBackStack(null)
+            .commit()
+    }
 
-    // Build and show a dialog where user enters name + calories
-    private fun showAddMealDialog() {
-        val context = requireContext()
+    private fun openEditMeal(meal: MealEntity) {
+        // Navigate to AddEditMealFragment with an existing meal (Edit flow).
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.main_fragment_container, AddEditMealFragment.newInstance(meal))
+            .addToBackStack(null)
+            .commit()
+    }
 
-        val layout = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(50, 40, 50, 10)
+    private fun showMealPicker() {
+        // No meals to display, so do nothing.
+        if (currentMeals.isEmpty()) {
+            return
         }
 
-        val nameInput = EditText(context).apply {
-            hint = "Meal name (e.g. Dinner)"
-        }
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 
-        val caloriesInput = EditText(context).apply {
-            hint = "Calories (e.g. 700)"
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER
-        }
-
-        layout.addView(nameInput)
-        layout.addView(caloriesInput)
-
-        androidx.appcompat.app.AlertDialog.Builder(context)
-            .setTitle("Add Meal")
-            .setView(layout)
-            .setPositiveButton("Save") { _, _ ->
-                val name = nameInput.text.toString().trim()
-                val calories = caloriesInput.text.toString().trim().toIntOrNull() ?: -1
-
-                if (name.isEmpty() || calories <= 0) {
-                    Toast.makeText(context, "Enter a valid name and calories.", Toast.LENGTH_SHORT).show()
-                    return@setPositiveButton
-                }
-
-                meals.add(Meal(name, calories))
-                updateMealsText()
+        // Create a readable list label for each meal for the selection dialog.
+        val labels = currentMeals.map { meal ->
+            val dtLabel = try {
+                LocalDateTime.parse(meal.dateTime).format(formatter)
+            } catch (_: Exception) {
+                meal.dateTime
             }
-            .setNegativeButton("Cancel", null)
+            "${meal.mealType} - ${meal.calories} kcal ($dtLabel)"
+        }.toTypedArray()
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Select a meal")
+            .setItems(labels) { _, which ->
+                val selected = currentMeals[which]
+                showMealDetails(selected)
+            }
+            .setNegativeButton("Close", null)
             .show()
     }
 
-    // Update the TextView from the meals list
-    private fun updateMealsText() {
-        if (meals.isEmpty()) {
+    private fun showMealDetails(meal: MealEntity) {
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+        val dtLabel = try {
+            LocalDateTime.parse(meal.dateTime).format(formatter)
+        } catch (_: Exception) {
+            meal.dateTime
+        }
+
+        // Notes are optional. If none were entered, show a clear default.
+        val notesText = meal.notes?.takeIf { it.isNotBlank() } ?: "None"
+
+        // Show full saved details so users can confirm macros and notes after logging.
+        val message = """
+            Date/Time: $dtLabel
+            
+            Meal: ${meal.mealType}
+            Calories: ${meal.calories} kcal
+            
+            Protein: ${meal.protein} g
+            Carbs: ${meal.carbs} g
+            Fats: ${meal.fats} g
+            
+            Notes: $notesText
+        """.trimIndent()
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Meal Details")
+            .setMessage(message)
+            // Edit uses the same AddEditMealFragment, pre-filled with the selected meal.
+            .setPositiveButton("Edit") { _, _ ->
+                openEditMeal(meal)
+            }
+            // Delete immediately removes the Firestore document and the listener updates the UI.
+            .setNeutralButton("Delete") { _, _ ->
+                mealsViewModel.deleteMeal(meal)
+            }
+            .setNegativeButton("Close", null)
+            .show()
+    }
+
+    private fun updateMealsText(meals: List<MealEntity>) {
+        // Keep the empty label in sync with the actual data.
+        val isEmpty = meals.isEmpty()
+        binding.tvMealsEmpty.visibility = if (isEmpty) View.VISIBLE else View.GONE
+
+        // RecyclerView exists in the layout but is not used in this version of MealsFragment.
+        // Hide it so it does not conflict visually with the summary text approach.
+        binding.rvMeals.visibility = View.GONE
+
+        // Summary view: list meal types + calories and show a quick total.
+        // Details are available by tapping to open the picker.
+        if (isEmpty) {
             binding.tvMealsData.text = "No meals logged yet."
             return
         }
@@ -98,12 +158,13 @@ class MealsFragment : Fragment() {
         val builder = StringBuilder()
         var total = 0
 
-        for (meal in meals) {
-            builder.append("${meal.name}: ${meal.calories} kcal\n")
+        meals.forEach { meal ->
+            builder.append("${meal.mealType}: ${meal.calories} kcal\n")
             total += meal.calories
         }
 
         builder.append("\nTotal: $total kcal")
+        builder.append("\n\nTap here to view meal details.")
 
         binding.tvMealsData.text = builder.toString()
     }
@@ -113,5 +174,3 @@ class MealsFragment : Fragment() {
         _binding = null
     }
 }
-
-

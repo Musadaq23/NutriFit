@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -22,54 +23,94 @@ class DashboardViewModel : ViewModel() {
     private val _weeklyWorkoutMinutes = MutableLiveData(0)
     val weeklyWorkoutMinutes: LiveData<Int> = _weeklyWorkoutMinutes
 
+    private val _caloriesLast7Days = MutableLiveData<List<Int>>(List(7) { 0 })
+    val caloriesLast7Days: LiveData<List<Int>> = _caloriesLast7Days
+
+    private val _workoutsLast7Days = MutableLiveData<List<Int>>(List(7) { 0 })
+    val workoutsLast7Days: LiveData<List<Int>> = _workoutsLast7Days
+
+    private var mealsListener: ListenerRegistration? = null
+    private var workoutsListener: ListenerRegistration? = null
+
     fun refresh() {
         val user = auth.currentUser ?: return
         val uid = user.uid
 
-        loadTodayCalories(uid)
-        loadWorkoutMinutes(uid)
+        startMealsListener(uid)
+        startWorkoutsListener(uid)
     }
 
-    private fun loadTodayCalories(uid: String) {
-        val today = LocalDate.now()
+    private fun startMealsListener(uid: String) {
+        mealsListener?.remove()
 
-        db.collection("users")
+        mealsListener = db.collection("users")
             .document(uid)
             .collection("meals")
-            .get()
-            .addOnSuccessListener { snapshot ->
-                var total = 0
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    error.printStackTrace()
+                    _todayCalories.value = 0
+                    _caloriesLast7Days.value = List(7) { 0 }
+                    return@addSnapshotListener
+                }
+                if (snapshot == null) return@addSnapshotListener
+
+                val today = LocalDate.now()
+                val weekStart = today.minusDays(6)
+
+                var todayTotal = 0
+                val perDay = MutableList(7) { 0 }
+
                 for (doc in snapshot.documents) {
                     val dtString = doc.getString("dateTime") ?: continue
                     val calories = doc.getLong("calories")?.toInt() ?: 0
 
                     try {
                         val dt = LocalDateTime.parse(dtString)
-                        if (dt.toLocalDate() == today) {
-                            total += calories
+                        val d = dt.toLocalDate()
+
+                        if (d == today) {
+                            todayTotal += calories
+                        }
+
+                        if (!d.isBefore(weekStart) && !d.isAfter(today)) {
+                            val index = (d.toEpochDay() - weekStart.toEpochDay()).toInt()
+                            if (index in 0..6) {
+                                perDay[index] += calories
+                            }
                         }
                     } catch (_: Exception) {
                         // ignore parse error
                     }
                 }
-                _todayCalories.value = total
-            }
-            .addOnFailureListener {
-                _todayCalories.value = 0
+
+                _todayCalories.value = todayTotal
+                _caloriesLast7Days.value = perDay
             }
     }
 
-    private fun loadWorkoutMinutes(uid: String) {
-        val today = LocalDate.now()
-        val weekStart = today.minusDays(6)
+    private fun startWorkoutsListener(uid: String) {
+        workoutsListener?.remove()
 
-        db.collection("users")
+        workoutsListener = db.collection("users")
             .document(uid)
             .collection("workouts")
-            .get()
-            .addOnSuccessListener { snapshot ->
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    error.printStackTrace()
+                    _todayWorkoutMinutes.value = 0
+                    _weeklyWorkoutMinutes.value = 0
+                    _workoutsLast7Days.value = List(7) { 0 }
+                    return@addSnapshotListener
+                }
+                if (snapshot == null) return@addSnapshotListener
+
+                val today = LocalDate.now()
+                val weekStart = today.minusDays(6)
+
                 var todayTotal = 0
                 var weekTotal = 0
+                val perDay = MutableList(7) { 0 }
 
                 for (doc in snapshot.documents) {
                     val dateString = doc.getString("date") ?: continue
@@ -77,11 +118,17 @@ class DashboardViewModel : ViewModel() {
 
                     try {
                         val d = LocalDate.parse(dateString)
+
                         if (d == today) {
                             todayTotal += duration
                         }
+
                         if (!d.isBefore(weekStart) && !d.isAfter(today)) {
                             weekTotal += duration
+                            val index = (d.toEpochDay() - weekStart.toEpochDay()).toInt()
+                            if (index in 0..6) {
+                                perDay[index] += duration
+                            }
                         }
                     } catch (_: Exception) {
 
@@ -90,10 +137,15 @@ class DashboardViewModel : ViewModel() {
 
                 _todayWorkoutMinutes.value = todayTotal
                 _weeklyWorkoutMinutes.value = weekTotal
-            }
-            .addOnFailureListener {
-                _todayWorkoutMinutes.value = 0
-                _weeklyWorkoutMinutes.value = 0
+                _workoutsLast7Days.value = perDay
             }
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        mealsListener?.remove()
+        workoutsListener?.remove()
+    }
 }
+
+

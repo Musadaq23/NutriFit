@@ -1,13 +1,10 @@
 package com.example.nutrifit.ui
 
-import android.R.attr.entries
 import android.app.AlarmManager
 import android.app.AlertDialog
 import android.app.DatePickerDialog
-import android.app.PendingIntent
 import android.app.TimePickerDialog
 import com.github.mikephil.charting.components.Description
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -20,9 +17,12 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import com.example.nutrifit.CalorieGoalEntity
-import com.example.nutrifit.ReminderReceiver
+import com.example.nutrifit.MealEntity
+import com.example.nutrifit.ReminderScheduler
+import com.example.nutrifit.WorkoutEntity
 import com.example.nutrifit.WorkoutGoalEntity
 import com.example.nutrifit.databinding.FragmentGoalsBinding
 import com.github.mikephil.charting.data.BarData
@@ -32,12 +32,10 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.Calendar
-import androidx.fragment.app.activityViewModels
-import com.example.nutrifit.WorkoutEntity
-import com.example.nutrifit.MealEntity
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
+import java.util.Calendar
 
 class GoalsFragment : Fragment() {
 
@@ -53,6 +51,12 @@ class GoalsFragment : Fragment() {
     private var weeklyWorkoutGoal: Int = 0
     private var dailyCalorieGoal: Int = 0
 
+    private var selectedReminderDate: LocalDate? = null
+    private var selectedReminderTime: LocalTime? = null
+
+    // Cache of today's calories so the progress bar updates correctly when the goal changes
+    private var todayCaloriesTotal: Int = 0
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentGoalsBinding.inflate(inflater, container, false)
         auth = FirebaseAuth.getInstance()
@@ -66,91 +70,78 @@ class GoalsFragment : Fragment() {
         getCalorieGoal()
         getWorkoutGoal()
 
+        // Listen for workout updates (drives workout progress + weekly chart)
         workoutsViewModel.workouts.observe(viewLifecycleOwner) { workouts ->
             updateWorkoutFromData(workouts)
         }
 
-        dailyWorkoutTotal {
-                totalDuration -> println("Total duration = $totalDuration")
+        // Listen for meal updates (drives calorie progress)
+        mealsViewModel.meals.observe(viewLifecycleOwner) { meals ->
+            updateCaloriesFromData(meals)
         }
 
+        // Initialize chart with empty data
         createChart(List(7) { 0 })
 
+        // Chart description label
         val desc = Description().apply {
             text = "Minutes worked out this week"
-            textSize = 12f    // optional
+            textSize = 12f
         }
         binding.goalChart.description = desc
 
-        //On click listener for time
+        // On click listener for time
         binding.reminderTime.setOnClickListener{
             showTimePicker()
         }
 
-        //On click listener for date
+        // On click listener for date
         binding.reminderDate.setOnClickListener{
             showDatePicker()
         }
 
-        //On click listener to update the goal
+        // On click listener to update the calorie goal
         binding.btnEditGoal.setOnClickListener{
             calorieGoalInputDialog()
         }
 
-        //On click listener for reminder button.
+        // On click listener for reminder button
         binding.btnDailyReminder.setOnClickListener {
 
-            // Before using exact alarms, make sure we’re allowed on Android 12+
-            if (hasExactAlarmPermission()) {
-                // DEMO: fire once in 10 seconds from now
-                scheduleInSeconds(
-                    seconds = 10,
-                    title = "NutriFit Check-in",
-                    text = "Don’t forget to log today’s meals and workouts!"
-                )
-
-                // Daily exact reminder at 8:00 PM
-                scheduleDaily(
-                    hour = 20,
-                    minute = 0,
-                    title = "Evening check-in",
-                    text = "Review today’s meals and workouts."
-                )
-
-                Toast.makeText(
-                    requireContext(),
-                    "10-second demo reminder + daily reminder set for 8:00 PM",
-                    Toast.LENGTH_LONG
-                ).show()
-            } else {
+            if (!hasExactAlarmPermission()) {
                 requestExactAlarmPermission()
+                return@setOnClickListener
             }
+
+            val date = selectedReminderDate
+            val time = selectedReminderTime
+
+            if (date == null || time == null) {
+                Toast.makeText(requireContext(), "Please select a date and time first.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            ReminderScheduler.schedule(
+                context = requireContext(),
+                date = date,
+                time = time,
+                title = "NutriFit Check-in",
+                text = "Don’t forget to log today’s meals and workouts!"
+            )
+
+            Toast.makeText(requireContext(), "Reminder scheduled.", Toast.LENGTH_SHORT).show()
         }
 
-        //On click listener for reminder cancel button
+        // On click listener for reminder cancel button
         binding.btnCancelReminder.setOnClickListener {
-            cancelReminders()
+            ReminderScheduler.cancel(requireContext())
             Toast.makeText(requireContext(), "Reminders canceled", Toast.LENGTH_SHORT).show()
         }
 
-        //On click listener for Workout goal button
+        // On click listener for Workout goal button
         binding.btnWorkoutGoal.setOnClickListener{
             workoutGoalInputDialog()
         }
-
-    }
-
-    private fun pendingIntent(title: String, text: String): PendingIntent {
-        val intent = Intent(requireContext(), ReminderReceiver::class.java).apply {
-            putExtra(ReminderReceiver.EXTRA_TITLE, title)
-            putExtra(ReminderReceiver.EXTRA_TEXT, text)
-        }
-        return PendingIntent.getBroadcast(
-            requireContext(),
-            0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
     }
 
     override fun onDestroyView() {
@@ -158,7 +149,7 @@ class GoalsFragment : Fragment() {
         _binding = null
     }
 
-    //Go to Login function pulled from Profile Fragment
+    // Go to Login function pulled from Profile Fragment
     private fun goToLogin() {
         val intent = Intent(requireContext(), LoginActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -167,12 +158,11 @@ class GoalsFragment : Fragment() {
         requireActivity().finish()
     }
 
-
     ////////////////////////////////////
     //[*]REMINDER RELATED FUNCTIONS[*]//
     ////////////////////////////////////
 
-    // check if we’re allowed to schedule exact alarms (Android 12+)
+    // Check if we’re allowed to schedule exact alarms (Android 12+)
     private fun hasExactAlarmPermission(): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
 
@@ -180,7 +170,7 @@ class GoalsFragment : Fragment() {
         return alarmManager?.canScheduleExactAlarms() == true
     }
 
-    // open system settings to request exact-alarm permission
+    // Open system settings to request exact-alarm permission
     private fun requestExactAlarmPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
@@ -195,49 +185,11 @@ class GoalsFragment : Fragment() {
         }
     }
 
-    // DEMO: fires once in N seconds (easy for presentation)
-    private fun scheduleInSeconds(seconds: Int, title: String, text: String) {
-        val triggerAt = System.currentTimeMillis() + seconds * 1000L
-        alarmMgr().setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            triggerAt,
-            pendingIntent(title, text)
-        )
-    }
-
-    //Alarm manager
-    private fun alarmMgr(): AlarmManager =
-        requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
-
-    // daily at fixed hour/minute
-    private fun scheduleDaily(hour: Int, minute: Int, title: String, text: String) {
-        val cal = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, hour)
-            set(Calendar.MINUTE, minute)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-            if (timeInMillis <= System.currentTimeMillis()) {
-                add(Calendar.DAY_OF_YEAR, 1) // tomorrow if time already passed
-            }
-        }
-        alarmMgr().setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            cal.timeInMillis,
-            pendingIntent(title, text)
-        )
-    }
-
-    //Cancel reminders
-    private fun cancelReminders() {
-        alarmMgr().cancel(pendingIntent("", "")) // same PI signature cancels
-    }
-
-
     ///////////////////////////////////
     //[*]WORKOUT RELATED FUNCTIONS[*]//
     ///////////////////////////////////
 
-    //Update goal dialog function
+    // Update goal dialog function
     private fun workoutGoalInputDialog(){
         val editText = EditText(requireContext()).apply {
             inputType = InputType.TYPE_CLASS_NUMBER
@@ -251,25 +203,26 @@ class GoalsFragment : Fragment() {
 
                 val input = editText.text.toString().trim()
 
-                //Input validation
-                //Empty
+                // Input validation
+                // Empty
                 if (input.isEmpty()) {
                     Toast.makeText(requireContext(), "Please enter a number.", Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
-                //Exceeds value
+                // Exceeds value
                 val inpValue = input.toInt()
                 if (inpValue > 840) {
                     Toast.makeText(requireContext(), "Goal cannot exceed 840 minutes", Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
 
-                //Update goal textview
+                // Update goal textview
                 binding.tvWorkoutGoal.text = "Your current workout goal this week is: $inpValue minutes"
 
                 dialog.dismiss()
                 weeklyWorkoutGoal = inpValue
                 workoutsViewModel.workouts.value?.let { updateWorkoutFromData(it) }
+
                 val goal = WorkoutGoalEntity(
                     goal = inpValue
                 )
@@ -282,7 +235,7 @@ class GoalsFragment : Fragment() {
             .show()
     }
 
-    //Adds workout goal to DB
+    // Adds workout goal to DB
     fun setWorkoutGoal(workoutGoal: WorkoutGoalEntity){
         val user = auth.currentUser ?: return
 
@@ -297,7 +250,7 @@ class GoalsFragment : Fragment() {
             .set(data)
     }
 
-    //Retrieves list of workouts
+    // Retrieves workout goal
     fun getWorkoutGoal(){
         val user = auth.currentUser
         if (user == null) {
@@ -315,24 +268,24 @@ class GoalsFragment : Fragment() {
             .addOnSuccessListener { doc ->
                 if (doc.exists()) {
                     println("Successfully retrieved DB collection")
-                    val Goal: Int = doc.getLong("workoutGoal")?.toInt() ?: 0
-                    println("retrieved stored value: $Goal")
+                    val goalValue: Int = doc.getLong("workoutGoal")?.toInt() ?: 0
+                    println("retrieved stored value: $goalValue")
 
-                    weeklyWorkoutGoal = Goal
+                    weeklyWorkoutGoal = goalValue
 
-                    //Update goal textview
-                    binding.tvWorkoutGoal.text = if (Goal > 0) "Weekly workout goal: $Goal"
-                    else "No workouts logged this week."
+                    // Update goal textview
+                    binding.tvWorkoutGoal.text =
+                        if (goalValue > 0) "Weekly workout goal: $goalValue"
+                        else "No weekly workout goal set."
+
                     workoutsViewModel.workouts.value?.let { updateWorkoutFromData(it) }
-                }
-
-                else {
+                } else {
                     println("Document does not exist")
                 }
             }
     }
 
-    //Calculates the total workout time for the day
+    // Calculates the total workout time for the day (currently unused, kept for future expansion)
     fun dailyWorkoutTotal(callback: (Int)-> Unit) {
         val user = auth.currentUser ?: return callback(0)
         val uid = user.uid
@@ -352,16 +305,11 @@ class GoalsFragment : Fragment() {
             }
     }
 
-    //Calculates the total workout time for the week
-    fun weeklyWorkoutTotal(){
-
-    }
-
     ///////////////////////////////////
     //[*]CALORIE RELATED FUNCTIONS[*]//
     ///////////////////////////////////
 
-    //Update goal dialog function
+    // Update calorie goal dialog function
     private fun calorieGoalInputDialog(){
         val editText = EditText(requireContext()).apply {
             inputType = InputType.TYPE_CLASS_NUMBER
@@ -375,27 +323,27 @@ class GoalsFragment : Fragment() {
 
                 val input = editText.text.toString().trim()
 
-                //Input validation
-                //Empty
+                // Input validation
+                // Empty
                 if (input.isEmpty()) {
                     Toast.makeText(requireContext(), "Please enter a number.", Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
-                //Exceeds value
+                // Exceeds value
                 val inpValue = input.toInt()
                 if (inpValue > 4000) {
                     Toast.makeText(requireContext(), "Goal cannot exceed 4000 calories.", Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
 
-                //Update goal textview
+                // Update goal textview
                 binding.tvGoalsData.text = "Daily Calorie goal: $inpValue"
 
                 dialog.dismiss()
 
-                val calorieTemp: Int = 350 + 600 + 950
+                dailyCalorieGoal = inpValue
+                calcCaloriePercent(todayCaloriesTotal, dailyCalorieGoal)
 
-                calcCaloriePercent(calorieTemp, inpValue)
                 val goal = CalorieGoalEntity(
                     goal = inpValue
                 )
@@ -408,7 +356,7 @@ class GoalsFragment : Fragment() {
             .show()
     }
 
-    //Adds calorie goal to DB
+    // Adds calorie goal to DB
     fun setCalorieGoal(caloricGoal: CalorieGoalEntity){
         val user = auth.currentUser ?: return
 
@@ -423,7 +371,7 @@ class GoalsFragment : Fragment() {
             .set(data)
     }
 
-    //retrieves calorie data and updates text accordingly.
+    // Retrieves calorie goal and updates UI
     fun getCalorieGoal() {
 
         val user = auth.currentUser
@@ -443,26 +391,27 @@ class GoalsFragment : Fragment() {
                 if (doc.exists()) {
                     println("Successfully retrieved DB collection")
                     val calorieGoal: Int = doc.getLong("caloricGoal")?.toInt() ?: 0
-                    val calorieTemp: Int = 350 + 600 + 950
                     println("retrieved stored value: $calorieGoal")
 
-                    //Update goal textview
-                    binding.tvGoalsData.text = if (calorieGoal > 0) "Daily Calorie goal: $calorieGoal" else "Set a goal to start \ntracking your progress."
-                    calcCaloriePercent(calorieTemp, calorieGoal)
-                }
+                    dailyCalorieGoal = calorieGoal
 
-                else {
+                    // Update goal textview
+                    binding.tvGoalsData.text =
+                        if (calorieGoal > 0) "Daily Calorie goal: $calorieGoal"
+                        else "Set a goal to start \ntracking your progress."
+
+                    calcCaloriePercent(todayCaloriesTotal, dailyCalorieGoal)
+                } else {
                     println("Document does not exist")
                 }
             }
     }
 
-
     /////////////////////////////////
     //[*]TIME AND DATE SELECTORS[*]//
     /////////////////////////////////
 
-    //Date Picker
+    // Date Picker
     private fun showDatePicker(){
         val calendar = Calendar.getInstance()
         val year = calendar.get(Calendar.YEAR)
@@ -474,6 +423,8 @@ class GoalsFragment : Fragment() {
             { _, selectedYear, selectedMonth, selectedDay ->
                 val formattedDate = "${selectedMonth+1}/${selectedDay}/${selectedYear}"
                 binding.reminderDate.text = formattedDate
+
+                selectedReminderDate = LocalDate.of(selectedYear, selectedMonth + 1, selectedDay)
             },
             year,
             month,
@@ -483,7 +434,7 @@ class GoalsFragment : Fragment() {
         datePicker.show()
     }
 
-    //Time Picker
+    // Time Picker
     private fun showTimePicker(){
         val calendar = Calendar.getInstance()
         val hour = calendar.get(Calendar.HOUR_OF_DAY)
@@ -496,6 +447,8 @@ class GoalsFragment : Fragment() {
                 val hour12 = if (selectedHour % 12 == 0) 12 else selectedHour % 12
                 val formattedTime = String.format("%02d:%02d %s", hour12, selectedMinute, amPm)
                 binding.reminderTime.text = formattedTime
+
+                selectedReminderTime = LocalTime.of(selectedHour, selectedMinute)
             },
             hour,
             minute,
@@ -505,34 +458,30 @@ class GoalsFragment : Fragment() {
         timePicker.show()
     }
 
-
     ///////////////////////////////
     //[*]CALCULATION FUNCTIONS[*]//
     ///////////////////////////////
 
-    //Calculate percentage to goal for Calorie Bar
+    // Calculate percentage to goal for Calorie Bar
     private fun calcCaloriePercent(c: Int, g: Int ){
         val current: Int = c
         val goal: Int = g
 
-        //No dividing by zero dumbass.
-        val percent: Int = if(goal == 0) {
-            100
-        } else {
-            100 * current/goal
-        }
+        // Prevent divide-by-zero when no goal is set.
+        val percent: Int =
+            if (goal <= 0) 0 else (100 * current / goal).coerceIn(0, 100)
 
-        //send update to progress bar
+        // send update to progress bar
         lifecycleScope.launch {
             calorieProgressBar(percent)
         }
     }
 
-    //Calculate percentage to goal for Workout Bar
+    // Calculate percentage to goal for Workout Bar
     private fun calcWorkoutPercent(current: Int, goal: Int) {
         val percent = if (goal <= 0) 0 else (current * 100 / goal).coerceIn(0, 100)
 
-        //send update to progress bar
+        // send update to progress bar
         lifecycleScope.launch {
             workoutProgressBar(percent)
         }
@@ -542,7 +491,7 @@ class GoalsFragment : Fragment() {
     //[*]CHART RELATED FUNCTIONS[*]//
     /////////////////////////////////
 
-    //Updates calorie progress bar
+    // Updates calorie progress bar
     private suspend fun calorieProgressBar(progress: Int){
         for (i in 1..progress){
             binding.calorieProgressBar.setProgress(i, true)
@@ -550,7 +499,7 @@ class GoalsFragment : Fragment() {
         }
     }
 
-    //Updates workout progress bar
+    // Updates workout progress bar
     private suspend fun workoutProgressBar(progress: Int){
         for (i in 1..progress){
             binding.workoutProgressBar.setProgress(i, true)
@@ -558,10 +507,9 @@ class GoalsFragment : Fragment() {
         }
     }
 
-    //For creation of the "work out" chart at the bottom of the fragment
+    // For creation of the workout chart at the bottom of the fragment
     private fun createChart(weekMinutes: List<Int>) {
         binding.goalChart.axisRight.setDrawLabels(false)
-        binding.goalChart.description.isEnabled = false
         binding.goalChart.axisLeft.axisMinimum = 0f
         binding.goalChart.setScaleEnabled(false)
 
@@ -570,14 +518,12 @@ class GoalsFragment : Fragment() {
             entries.add(BarEntry(index.toFloat(), minutes.toFloat()))
         }
 
-
-        //Assigns  to variables to be pushed to chart
+        // Assign data to the chart
         val dataSet = BarDataSet(entries, "Minutes worked out")
         val barData: BarData = BarData(dataSet)
 
         binding.goalChart.data = barData
         binding.goalChart.invalidate()
-
     }
 
     private fun updateWorkoutFromData(workouts: List<WorkoutEntity>) {
@@ -598,34 +544,38 @@ class GoalsFragment : Fragment() {
                     }
                 }
             } catch (_: Exception) {
-
+                // ignore bad date formats
             }
         }
 
         // update
         calcWorkoutPercent(weekTotal, weeklyWorkoutGoal)
 
-        //  chart
+        // chart
         createChart(perDay)
     }
 
     private fun updateCaloriesFromData(meals: List<MealEntity>) {
         val today = LocalDate.now()
-        var todayCalories = 0
+        var total = 0
 
         for (m in meals) {
             try {
                 val dt = LocalDateTime.parse(m.dateTime)
                 if (dt.toLocalDate() == today) {
-                    todayCalories += m.calories
+                    total += m.calories
                 }
             } catch (_: Exception) {
-
+                // ignore bad datetime formats
             }
         }
 
+        todayCaloriesTotal = total
+
         // update
-        calcCaloriePercent(todayCalories, dailyCalorieGoal)
+        calcCaloriePercent(todayCaloriesTotal, dailyCalorieGoal)
     }
 }
+
+
 

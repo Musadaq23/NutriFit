@@ -36,9 +36,12 @@ class MealsViewModel : ViewModel() {
             .collection("meals")
             .orderBy("dateTime", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
-                if (error != null || snapshot == null) {
+                if (error != null) {
+                    // Improvement, don't silently fail
+                    error.printStackTrace()
                     return@addSnapshotListener
                 }
+                if (snapshot == null) return@addSnapshotListener
 
                 val list = snapshot.documents.mapNotNull { doc ->
                     val dateTime = doc.getString("dateTime") ?: return@mapNotNull null
@@ -82,6 +85,13 @@ class MealsViewModel : ViewModel() {
             .document(user.uid)
             .collection("meals")
             .add(data)
+            .addOnSuccessListener {
+                // Snapshot listener will refresh UI automatically
+            }
+            .addOnFailureListener { e ->
+                // Improvement, don't silently fail
+                e.printStackTrace()
+            }
     }
 
     fun updateMeal(meal: MealEntity) {
@@ -103,6 +113,13 @@ class MealsViewModel : ViewModel() {
             .collection("meals")
             .document(meal.id)
             .set(data)
+            .addOnSuccessListener {
+                // Snapshot listener will refresh UI automatically
+            }
+            .addOnFailureListener { e ->
+                // Improvement, don't silently fail
+                e.printStackTrace()
+            }
     }
 
     fun deleteMeal(meal: MealEntity) {
@@ -114,6 +131,13 @@ class MealsViewModel : ViewModel() {
             .collection("meals")
             .document(meal.id)
             .delete()
+            .addOnSuccessListener {
+                // Snapshot listener will refresh UI automatically
+            }
+            .addOnFailureListener { e ->
+                // Improvement,don't silently fail
+                e.printStackTrace()
+            }
     }
 
     override fun onCleared() {
