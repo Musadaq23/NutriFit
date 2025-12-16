@@ -4,6 +4,9 @@ gradle/caches/
 **/build/
 build/
 gradle/kotlin-profile/
+gradle/native/
+gradle/wrapper/dists/
+*.lock
 
 # Local properties
 local.properties
