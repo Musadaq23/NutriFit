@@ -17,6 +17,8 @@ import com.example.nutrifit.databinding.FragmentWorkoutsBinding
 import com.example.nutrifit.databinding.ItemWorkoutRowBinding
 import java.time.LocalDate
 import java.util.Locale
+import androidx.appcompat.app.AppCompatActivity
+
 
 class WorkoutsFragment : Fragment() {
 
@@ -38,8 +40,6 @@ class WorkoutsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        binding.tvWorkoutsTitle.text = "Workouts"
 
         adapter = WorkoutAdapter(
             items,
@@ -364,6 +364,10 @@ class WorkoutsFragment : Fragment() {
             holder.rowBinding.tvWorkoutSubtitle.text = subtitleBuilder.toString()
 
             holder.rowBinding.root.setOnClickListener {
+                onItemClick(item)
+            }
+
+            holder.rowBinding.btnEditWorkout.setOnClickListener {
                 onItemClick(item)
             }
 

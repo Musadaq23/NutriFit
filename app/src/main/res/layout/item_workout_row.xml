@@ -4,17 +4,40 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="12dp">
+    android:padding="12dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground">
 
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/topAppBar"
-        android:layout_width="0dp"
+    <!-- Right-side button container (fixed width so icons never disappear) -->
+    <LinearLayout
+        android:id="@+id/actionsContainer"
+        android:layout_width="88dp"
         android:layout_height="wrap_content"
-        android:title="Workouts"
-        style="@style/Widget.Material3.Toolbar"
+        android:orientation="horizontal"
+        android:gravity="end|center_vertical"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageButton
+            android:id="@+id/btnEditWorkout"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Edit workout"
+            android:src="@android:drawable/ic_menu_edit"
+            app:tint="@android:color/darker_gray" />
+
+        <ImageButton
+            android:id="@+id/btnDeleteWorkout"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Delete workout"
+            android:src="@android:drawable/ic_menu_delete"
+            app:tint="@android:color/darker_gray" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/tvWorkoutTitle"
@@ -23,10 +46,10 @@
         android:text="Bench Press – 4 x 8 @ 135 lb"
         android:textSize="16sp"
         android:textStyle="bold"
+        android:layout_marginEnd="12dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/btnDeleteWorkout"
-        app:layout_constraintHorizontal_bias="0" />
+        app:layout_constraintEnd_toStartOf="@id/actionsContainer" />
 
     <TextView
         android:id="@+id/tvWorkoutSubtitle"
@@ -36,21 +59,10 @@
         android:textSize="14sp"
         android:textColor="#777777"
         android:layout_marginTop="4dp"
+        android:layout_marginEnd="12dp"
         app:layout_constraintTop_toBottomOf="@id/tvWorkoutTitle"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/btnDeleteWorkout"
-        app:layout_constraintHorizontal_bias="0" />
-
-    <ImageButton
-        android:id="@+id/btnDeleteWorkout"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Delete workout"
-        android:src="@android:drawable/ic_menu_delete"
-        app:tint="@android:color/darker_gray"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toStartOf="@id/actionsContainer"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
