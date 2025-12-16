@@ -151,9 +151,13 @@ class MealsFragment : Fragment() {
         // Summary view: list meal types + calories and show a quick total.
         // Details are available by tapping to open the picker.
         if (isEmpty) {
-            binding.tvMealsData.text = "No meals logged yet."
+            // IMPORTANT: avoid duplicate "No meals logged yet." by hiding tvMealsData
+            binding.tvMealsData.visibility = View.GONE
             return
         }
+
+        // Meals exist, so show the summary text area.
+        binding.tvMealsData.visibility = View.VISIBLE
 
         val builder = StringBuilder()
         var total = 0
